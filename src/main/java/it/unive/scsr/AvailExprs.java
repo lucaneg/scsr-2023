@@ -71,16 +71,7 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
 
 	@Override
 	public Collection<AvailExprs> gen(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
-		Set<AvailExprs> result = new HashSet<>();
-		try {
-			Float.parseFloat(expression.toString());
-		} catch (Exception e) {
-			if (!expression.toString().contains(id.toString())) {
-				AvailExprs ae = new AvailExprs(id, expression);
-				result.add(ae);
-			}
-		}
-		return result;
+		return new HashSet<>();
 	}
 
 	@Override
@@ -103,7 +94,7 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
 	public Collection<AvailExprs> kill(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
 		Set<AvailExprs> killed = new HashSet<>();
 		for (AvailExprs ae : domain.getDataflowElements()) {
-			if (ae.expression.toString().contains(id.toString())) {
+			if (ae.expression.toString().contains(" " + id.toString() + " ") || ae.expression.toString().startsWith(id.toString() + " ") || ae.expression.toString().endsWith(" " + id.toString())) {
 				killed.add(ae);
 			}
 		}
