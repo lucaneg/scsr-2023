@@ -1,12 +1,12 @@
 package it.unive.scsr;
 
-import org.junit.Test;
-
 import it.unive.lisa.AnalysisException;
 import it.unive.lisa.LiSA;
 import it.unive.lisa.LiSAConfiguration;
 import it.unive.lisa.LiSAConfiguration.GraphType;
 import it.unive.lisa.analysis.SimpleAbstractState;
+import it.unive.lisa.analysis.dataflow.AvailableExpressions;
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import it.unive.lisa.analysis.dataflow.PossibleForwardDataflowDomain;
 import it.unive.lisa.analysis.heap.MonolithicHeap;
 import it.unive.lisa.analysis.nonrelational.value.TypeEnvironment;
@@ -14,8 +14,9 @@ import it.unive.lisa.analysis.types.InferredTypes;
 import it.unive.lisa.imp.IMPFrontend;
 import it.unive.lisa.imp.ParsingException;
 import it.unive.lisa.program.Program;
+import org.junit.Test;
 
-public class ReachingDefinitionsTest {
+public class AvailableExpressionsTest {
 
 	@Test
 	public void testRD() throws ParsingException, AnalysisException {
@@ -26,7 +27,7 @@ public class ReachingDefinitionsTest {
 		LiSAConfiguration conf = new LiSAConfiguration();
 
 		// we specify where we want files to be generated
-		conf.workdir = "outputs/rd";
+		conf.workdir = "outputs/ae";
 
 		// we specify the visual format of the analysis results
 		conf.analysisGraphs = GraphType.HTML;
@@ -35,8 +36,8 @@ public class ReachingDefinitionsTest {
 		conf.abstractState = new SimpleAbstractState<>(
 				// memory handling
 				new MonolithicHeap(),
-				// domain
-				new PossibleForwardDataflowDomain<>(new ReachingDefinitions()),
+				// I changed the domain from the previous test!
+				new DefiniteForwardDataflowDomain<>(new AvailableExpressions()),
 				// how we compute types of expressions
 				new TypeEnvironment<>(new InferredTypes()));
 
