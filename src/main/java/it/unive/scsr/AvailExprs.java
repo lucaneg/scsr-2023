@@ -109,6 +109,23 @@ public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomai
 		}
 		return res;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ( ( expression== null ) ? 0 : expression.hashCode() );
+		return result;
+	}
+
+	@Override
+	public boolean equals( Object obj ) {
+		if ( this == obj )
+			return true;
+		AvailExprs friend = ( AvailExprs ) obj;
+		if ( expression.equals( friend.expression ) )
+			return true;
+		return false;
 	}
 
 	@Override
