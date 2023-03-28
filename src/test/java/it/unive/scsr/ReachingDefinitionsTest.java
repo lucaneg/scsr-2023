@@ -1,5 +1,6 @@
 package it.unive.scsr;
 
+import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import org.junit.Test;
 
 import it.unive.lisa.AnalysisException;
@@ -36,7 +37,7 @@ public class ReachingDefinitionsTest {
 				// memory handling
 				new MonolithicHeap(),
 				// domain
-				new PossibleForwardDataflowDomain<>(new ReachingDefinitions()),
+				new DefiniteForwardDataflowDomain<>(new AvailExprs()),
 				// how we compute types of expressions
 				new TypeEnvironment<>(new InferredTypes()));
 
