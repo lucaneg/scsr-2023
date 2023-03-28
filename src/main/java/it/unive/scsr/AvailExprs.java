@@ -123,9 +123,7 @@ public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomai
 		if ( this == obj )
 			return true;
 		AvailExprs friend = ( AvailExprs ) obj;
-		if ( expression.equals( friend.expression ) )
-			return true;
-		return false;
+		return expression.equals( friend.expression );
 	}
 
 	@Override
