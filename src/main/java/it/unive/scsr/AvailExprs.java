@@ -48,82 +48,82 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
     }
 
     public Collection<Identifier> getInvolvedIdentifiers(ValueExpression expression) {
-        Collection<Identifier> res = new HashSet<Identifier>();
+        Collection<Identifier> col = new HashSet<Identifier>();
         if (expression != null) {
             if (expression instanceof Identifier) {
-                res.add((Identifier) expression);
+                col.add((Identifier) expression);
             }
             else if (expression instanceof UnaryExpression) {
                 Collection<Identifier> ci = getInvolvedIdentifiers((ValueExpression) ((UnaryExpression) expression).getExpression());
-                res.addAll(ci);
+                col.addAll(ci);
             }
             else if (expression instanceof BinaryExpression) {
-                Collection<Identifier> cl = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getLeft());
-                res.addAll(cl);
-                Collection<Identifier> cr = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getRight());
-                res.addAll(cr);
+                Collection<Identifier> gl = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getLeft());
+                col.addAll(gl);
+                Collection<Identifier> gr = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getRight());
+                col.addAll(gr);
             }
             else if (expression instanceof TernaryExpression) {
-                Collection<Identifier> cl = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getLeft());
-                res.addAll(cl);
-                Collection<Identifier> cm = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getMiddle());
-                res.addAll(cm);
-                Collection<Identifier> cr = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getRight());
-                res.addAll(cr);
+                Collection<Identifier> gl = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getLeft());
+                col.addAll(gl);
+                Collection<Identifier> gm = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getMiddle());
+                col.addAll(gm);
+                Collection<Identifier> gr = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getRight());
+                col.addAll(gr);
             }
         }
-        return res;
+        return col;
     }
 
     //This function gen is used when there is an assignment where the variable on the left side is not contained on the right side
     @Override
     public Collection<AvailExprs> gen(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
-        Collection<AvailExprs> res = new HashSet<AvailExprs>();
+        Collection<AvailExprs> col = new HashSet<AvailExprs>();
         AvailExprs ae = new AvailExprs(expression);
-        Collection<Identifier> ci = ae.getInvolvedIdentifiers();
+        Collection<Identifier> ide = ae.getInvolvedIdentifiers();
         //check if the variable on the left side is not contained on the right side
-        if (!ci.contains(id)) {
+        if (!ide.contains(id)) {
             //check the expression
             if (!(expression instanceof Constant)) {
                 if (!(expression instanceof Identifier)) {
                     if (!(expression instanceof Skip)) {
-                        res.add(ae);
+                        col.add(ae);
                     }
                 }
             }
         }
-        return res;
+        return col;
     }
 
     //This function gen is used when there isn't an assignment, there is an expression
     @Override
     public Collection<AvailExprs> gen(ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
-        Collection<AvailExprs> res = new HashSet<AvailExprs>();
+        Collection<AvailExprs> col = new HashSet<AvailExprs>();
         AvailExprs ae = new AvailExprs(expression);
         //check the expression
         if (!(expression instanceof Constant)) {
             if (!(expression instanceof Identifier)) {
                 if (!(expression instanceof Skip)) {
-                    res.add(ae);
+                    col.add(ae);
                 }
             }
         }
-        return res;
+        return col;
     }
 
     //This function kill is used when there is an assignment where the variable on the left side is contained on the right side
     @Override
     public Collection<AvailExprs> kill(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
-        Collection<AvailExprs> res = new HashSet<AvailExprs>();
+        Collection<AvailExprs> col = new HashSet<AvailExprs>();
         Set<AvailExprs> df = domain.getDataflowElements();
         for (AvailExprs ae : df) {
             Collection<Identifier> ci = ae.getInvolvedIdentifiers();
             //check if the variable on the left side is contained on the right side
             if (ci.contains(id)) {
-                res.add(ae);
+                col.add(ae);
             }
         }
-        return res;
+        return col;
     }
 
     //This function kill is used when there isn't an assignment, there is an expression
