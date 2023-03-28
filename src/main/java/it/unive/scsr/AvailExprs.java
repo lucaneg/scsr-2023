@@ -1,5 +1,6 @@
 package it.unive.scsr;
 
+
 import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.dataflow.DataflowElement;
@@ -131,4 +132,7 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
     public AvailExprs popScope(ScopeToken scope) throws SemanticException {
         return this;
     }
+
 }
+
+
