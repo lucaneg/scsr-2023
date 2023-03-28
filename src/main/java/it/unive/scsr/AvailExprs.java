@@ -17,29 +17,11 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
     private final ValueExpression expression;
 
     public AvailExprs() {
-        this(null);
+        this.expression = null;
     }
 
     public AvailExprs(ValueExpression expression) {
         this.expression = expression;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        else if (o == null) return false;
-        else if (this.getClass() != o.getClass()) return false;
-        else return Objects.equals(this.expression, ((AvailExprs) o).expression);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.expression);
-    }
-
-    @Override
-    public String toString() {
-        return this.representation().toString();
     }
 
     @Override
@@ -54,22 +36,22 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
                 col.add((Identifier) expression);
             }
             else if (expression instanceof UnaryExpression) {
-                Collection<Identifier> ci = getInvolvedIdentifiers((ValueExpression) ((UnaryExpression) expression).getExpression());
-                col.addAll(ci);
+                Collection<Identifier> unarye = getInvolvedIdentifiers((ValueExpression) ((UnaryExpression) expression).getExpression());
+                col.addAll(unarye);
             }
             else if (expression instanceof BinaryExpression) {
-                Collection<Identifier> gl = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getLeft());
-                col.addAll(gl);
-                Collection<Identifier> gr = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getRight());
-                col.addAll(gr);
+                Collection<Identifier> left = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getLeft());
+                col.addAll(left);
+                Collection<Identifier> right = getInvolvedIdentifiers((ValueExpression) ((BinaryExpression) expression).getRight());
+                col.addAll(right);
             }
             else if (expression instanceof TernaryExpression) {
-                Collection<Identifier> gl = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getLeft());
-                col.addAll(gl);
-                Collection<Identifier> gm = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getMiddle());
-                col.addAll(gm);
-                Collection<Identifier> gr = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getRight());
-                col.addAll(gr);
+                Collection<Identifier> left = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getLeft());
+                col.addAll(left);
+                Collection<Identifier> middle = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getMiddle());
+                col.addAll(middle);
+                Collection<Identifier> right = getInvolvedIdentifiers((ValueExpression) ((TernaryExpression) expression).getRight());
+                col.addAll(right);
             }
         }
         return col;
@@ -115,11 +97,11 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
     @Override
     public Collection<AvailExprs> kill(Identifier id, ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
         Collection<AvailExprs> col = new HashSet<AvailExprs>();
-        Set<AvailExprs> df = domain.getDataflowElements();
-        for (AvailExprs ae : df) {
-            Collection<Identifier> ci = ae.getInvolvedIdentifiers();
+        Set<AvailExprs> setae = domain.getDataflowElements();
+        for (AvailExprs ae : setae) {
+            Collection<Identifier> ide = ae.getInvolvedIdentifiers();
             //check if the variable on the left side is contained on the right side
-            if (ci.contains(id)) {
+            if (ide.contains(id)) {
                 col.add(ae);
             }
         }
@@ -131,6 +113,20 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
     public Collection<AvailExprs> kill(ValueExpression expression, ProgramPoint pp, DefiniteForwardDataflowDomain<AvailExprs> domain) throws SemanticException {
         return new HashSet<>();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        else if (o == null) return false;
+        else if (this.getClass() != o.getClass()) return false;
+        else return Objects.equals(this.expression, ((AvailExprs) o).expression);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(this.expression);
+    }
+
 	// IMPLEMENTATION NOTE:
 	// the code below is outside of the scope of the course. You can uncomment
 	// it to get your code to compile. Be aware that the code is written
@@ -147,11 +143,11 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
 
 	@Override
 	public AvailExprs pushScope(ScopeToken scope) throws SemanticException {
-		return new AvailExprs((ValueExpression) expression.pushScope(scope));
+		return this;
 	}
 
     @Override
     public AvailExprs popScope(ScopeToken scope) throws SemanticException {
-		return new AvailExprs((ValueExpression) expression.popScope(scope));
+		return this;
 	}
 }
