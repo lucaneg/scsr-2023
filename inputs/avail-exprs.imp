@@ -1,4 +1,5 @@
 class availableExpressions {
+
 	test1() {
 		def i = 5;
 		def x = "s";
