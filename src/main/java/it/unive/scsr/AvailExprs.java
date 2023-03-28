@@ -12,7 +12,6 @@ import it.unive.lisa.symbolic.value.*;
 import java.util.Collection;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.stream.Collectors;
 
 public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomain< AvailExprs >, AvailExprs > {
 
@@ -26,16 +25,19 @@ public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomai
 	// solution, then you should make sure that what you are doing is correct :)
     private final ValueExpression expression;
 
+	public AvailExprs() { this( null ); }
     public AvailExprs( ValueExpression expr ) { this.expression = expr; }
 
-	public Collection< Identifier > getInvolvedIdentifiers( ValueExpression expr ) {
+	private Collection< Identifier > getInvolvedIdentifiers( ValueExpression expr ) {
 		Set< Identifier > res = new HashSet<>();
 
-		if ( expr instanceof Variable ) {
-			res.add( (Identifier) expr);
+		if ( expr instanceof Identifier ) {
+			res.add( ( Identifier ) expr );
 		}
 		if ( expr instanceof UnaryExpression ) {
-			res.addAll( getInvolvedIdentifiers( (ValueExpression) ( ( UnaryExpression ) expr ).getExpression()) );
+			res.addAll( getInvolvedIdentifiers(
+					( ValueExpression ) ( ( UnaryExpression ) expr ).getExpression()
+			) );
 		}
 		if ( expr instanceof BinaryExpression) {
 			BinaryExpression binexpr = ( BinaryExpression ) expr;
@@ -76,13 +78,21 @@ public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomai
 		return new HashSet<>();
 	}
 
+	private boolean isRelevant( ValueExpression expr ) {
+		return expr instanceof UnaryExpression
+			|| expr instanceof BinaryExpression
+			|| expr instanceof TernaryExpression;
+	}
+
 	@Override
 	public Collection< AvailExprs > gen( ValueExpression expression,
 										 ProgramPoint pp,
 										 DefiniteForwardDataflowDomain< AvailExprs > domain
 	) throws SemanticException {
-		return getInvolvedIdentifiers( expression ).stream().map(AvailExprs::new)
-															.collect(Collectors.toSet() );
+		Collection< AvailExprs > res = new HashSet<>();
+		if ( isRelevant( expression ) )
+			res.add( new AvailExprs( expression ) );
+		return res;
 	}
 
 	@Override
@@ -91,9 +101,14 @@ public class AvailExprs implements DataflowElement< DefiniteForwardDataflowDomai
 										 ProgramPoint pp,
 										 DefiniteForwardDataflowDomain< AvailExprs > domain
 	) throws SemanticException {
-		return getInvolvedIdentifiers( expression ).stream().map(AvailExprs::new)
-															.filter( x -> !( x.getInvolvedIdentifiers().contains( id ) ) )
-															.collect(Collectors.toSet() );
+		Collection< AvailExprs > res = new HashSet<>();
+		if ( isRelevant( expression ) ) {
+			AvailExprs aexpr = new AvailExprs( expression );
+			if ( !aexpr.getInvolvedIdentifiers().contains( id ) )
+				res.add( aexpr );
+		}
+		return res;
+	}
 	}
 
 	@Override
