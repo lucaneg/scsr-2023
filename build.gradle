@@ -13,3 +13,10 @@ dependencies {
     implementation 'io.github.lisa-analyzer:lisa-imp:0.1b7'
     testImplementation 'junit:junit:4.12'
 }
+
+test {
+    testLogging {
+        outputs.upToDateWhen {false}
+        showStandardStreams = true
+    }
+}
