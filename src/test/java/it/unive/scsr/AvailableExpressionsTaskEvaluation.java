@@ -30,6 +30,8 @@ public class AvailableExpressionsTaskEvaluation {
 
 	@Test
 	public void testAvailableExpressions() throws ParsingException, AnalysisException {
+		// tested using ./tester.sh it.unive.scsr.AvailableExpressionsTaskEvaluation ae
+		
 		Program program = IMPFrontend.processFile("inputs/ae-eval.imp");
 
 		LiSAConfiguration conf = new LiSAConfiguration();
