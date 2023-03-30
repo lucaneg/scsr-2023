@@ -36,7 +36,7 @@ public class ReachingDefinitionsTest {
 				// memory handling
 				new MonolithicHeap(),
 				// domain
-				new PossibleForwardDataflowDomain<>(new ReachingDefinitions()),
+				new DefiniteForwardDataflowDomain<>(new AvailExprs()),
 				// how we compute types of expressions
 				new TypeEnvironment<>(new InferredTypes()));
 
