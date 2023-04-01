@@ -87,8 +87,7 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
         Set<AvailExprs> result = new HashSet<>();
         AvailExprs availExprs = new AvailExprs(expression);
 
-        if ((expression instanceof Identifier ||
-             expression instanceof UnaryExpression ||
+        if ((expression instanceof UnaryExpression ||
              expression instanceof BinaryExpression  ||
              expression instanceof TernaryExpression) && !availExprs.getInvolvedIdentifiers().contains(id)) {
             result.add(availExprs);
@@ -102,8 +101,7 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
         Set<AvailExprs> result = new HashSet<>();
         AvailExprs availExprs = new AvailExprs(expression);
 
-        if ((expression instanceof Identifier ||
-                expression instanceof UnaryExpression ||
+        if ((expression instanceof UnaryExpression ||
                 expression instanceof BinaryExpression  ||
                 expression instanceof TernaryExpression)) {
             result.add(availExprs);
