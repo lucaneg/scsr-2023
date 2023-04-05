@@ -41,7 +41,7 @@ public class AvailableExpressionsTaskEvaluation {
 		conf.abstractState = new SimpleAbstractState<>(
 				new MonolithicHeap(),
 				// the results have been generated using the AvailExprsSolution class
-				new DefiniteForwardDataflowDomain<>(new AvailExprs()),
+				new DefiniteForwardDataflowDomain<>(new AvailExprsSolution()),
 				new TypeEnvironment<>(new InferredTypes()));
 
 		LiSA lisa = new LiSA(conf);
