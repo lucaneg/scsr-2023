@@ -80,11 +80,10 @@ public class AvailExprs implements DataflowElement<DefiniteForwardDataflowDomain
 		try {
 			Float.parseFloat(expression.toString());
 		} catch (Exception e) {
-			if (expression.toString().contains("+") || expression.toString().contains("*") || expression.toString().contains("-") || expression.toString().contains("/") || expression.toString().contains("%")) {
-				if (!expression.toString().contains("<") && !expression.toString().contains(">") && !expression.toString().contains("<=") && !expression.toString().contains(">=") && !expression.toString().contains("==") && !expression.toString().contains("!=")) {
-					AvailExprs ae = new AvailExprs(null, expression);
-					result.add(ae);
-				}
+			if (expression.toString().contains("+") || expression.toString().contains("*") || expression.toString().contains("-") || expression.toString().contains("/") || expression.toString().contains("%") ||
+			expression.toString().contains("<") || expression.toString().contains(">") || expression.toString().contains("<=") || expression.toString().contains(">=") || expression.toString().contains("==") || expression.toString().contains("!=")) {
+				AvailExprs ae = new AvailExprs(null, expression);
+				result.add(ae);
 			}
 		}
 		return result;
