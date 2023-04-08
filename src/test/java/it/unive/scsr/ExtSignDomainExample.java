@@ -29,7 +29,8 @@ public class ExtSignDomainExample {
 		conf.workdir = "outputs/ext-sign-example";
 
 		// we specify the visual format of the analysis results
-		conf.analysisGraphs = GraphType.HTML;
+		//conf.analysisGraphs = GraphType.HTML;
+		conf.analysisGraphs = GraphType.DOT;
 
 		// we specify the analysis that we want to execute
 		conf.abstractState = new SimpleAbstractState<>(
@@ -38,7 +39,7 @@ public class ExtSignDomainExample {
 				// value domain
 				// NOTE: the following line won't compile unless you 
 				// extend the right class in ExtSignDomain 
-				new ValueEnvironment<>(new ExtSignDomain()),
+				new ValueEnvironment<>(ExtSignDomain.top),
 				// type domain
 				new TypeEnvironment<>(new InferredTypes()));
 
