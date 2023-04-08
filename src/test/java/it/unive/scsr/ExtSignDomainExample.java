@@ -29,8 +29,8 @@ public class ExtSignDomainExample {
 		conf.workdir = "outputs/ext-sign-example";
 
 		// we specify the visual format of the analysis results
-		//conf.analysisGraphs = GraphType.HTML;
-		conf.analysisGraphs = GraphType.DOT;
+		conf.analysisGraphs = GraphType.HTML;
+		//conf.analysisGraphs = GraphType.DOT;
 
 		// we specify the analysis that we want to execute
 		conf.abstractState = new SimpleAbstractState<>(
