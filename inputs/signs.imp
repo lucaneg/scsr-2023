@@ -9,8 +9,8 @@ class tutorial {
     }
     
 	basic() {
-		def i = 2;
-		def j = -10;
+		def i = 12;
+		def j = 0;
 		def a = i + j;
 		def s = i - j;
 		def m = i * j;
