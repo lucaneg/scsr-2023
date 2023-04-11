@@ -1,5 +1,6 @@
 package it.unive.scsr;
 
+import it.unive.lisa.analysis.Lattice;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
@@ -24,8 +25,6 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     public static ExtSignDomain positive = new ExtSignDomain(1);
     public static ExtSignDomain negative = new ExtSignDomain(-1);
     public static ExtSignDomain zero = new ExtSignDomain(0);
-    public static ExtSignDomain zero_or_positive = new ExtSignDomain(+0);
-    public static ExtSignDomain zero_or_negative = new ExtSignDomain(-0);
 
 
     public ExtSignDomain(int value) {
@@ -159,15 +158,16 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     @Override
     public DomainRepresentation representation() {
 
+        if (this == top)
+            return Lattice.topRepresentation();
+        if (this == bottom)
+            return Lattice.bottomRepresentation();
         if (this == positive)
             return new StringRepresentation("+");
         if (this == negative)
             return new StringRepresentation("-");
-        if (this == zero)
-            return new StringRepresentation("0");
-        if (this == zero_or_positive)
-            return new StringRepresentation("0+");
-        return new StringRepresentation("0-");
+        return new StringRepresentation("0");
+
     }
 
 
