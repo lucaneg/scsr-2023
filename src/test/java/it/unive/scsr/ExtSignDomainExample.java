@@ -20,7 +20,7 @@ public class ExtSignDomainExample {
 	@Test
 	public void testAvailableExpressions() throws ParsingException, AnalysisException {
 		// we parse the program to get the CFG representation of the code in it
-		Program program = IMPFrontend.processFile("inputs/signs.imp");
+		Program program = IMPFrontend.processFile("inputs/ext-signs.imp");
 
 		// we build a new configuration for the analysis
 		LiSAConfiguration conf = new LiSAConfiguration();
