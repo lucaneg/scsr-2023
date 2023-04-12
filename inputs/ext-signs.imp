@@ -25,4 +25,14 @@ class tutorial {
            	x = -7;
 		def y = x / x;
     }
+
+    other(){
+        def x = 1;
+        x = x * 2;
+        def i = 0;
+        def y = -3;
+        while (i < 100)
+            x = x / -2;
+            y = y - x;
+    }
 }

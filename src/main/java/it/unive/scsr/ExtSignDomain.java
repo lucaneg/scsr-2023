@@ -241,48 +241,37 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 else return new ExtSignDomain(Sign.ZERO_POS);
             }
         } else if (operator instanceof DivisionOperator) {
-            if (left.sign == Sign.BOTTOM || right.sign == Sign.BOTTOM)
+            if (left.sign == Sign.BOTTOM || right.sign == Sign.BOTTOM || right.sign == Sign.ZERO)
                 return bottom();
             else if ((right.sign == Sign.TOP && left.sign != Sign.ZERO && left.sign != Sign.BOTTOM) ||
                     (left.sign == Sign.TOP && right.sign != Sign.ZERO && right.sign != Sign.BOTTOM))
-                return new ExtSignDomain(Sign.TOP);
-            else if (left.sign == Sign.ZERO) {
-                if (right.sign == Sign.ZERO)
-                    return new ExtSignDomain(Sign.ZERO);
-                else
-                    return bottom();
-            } else if (left.sign == Sign.NEG) {
+                return top();
+            else if (left.sign == Sign.ZERO)
+                return bottom();
+            else if (left.sign == Sign.NEG) {
                 if (right.sign == Sign.NEG || right.sign == Sign.POS)
                     return right.negate();
                 else if (right.sign == Sign.ZERO_NEG)
                     return new ExtSignDomain(Sign.POS);
                 else if (right.sign == Sign.ZERO_POS)
                     return new ExtSignDomain(Sign.NEG);
-                else if (right.sign == Sign.ZERO)
-                    return new ExtSignDomain(Sign.ZERO);
             } else if (left.sign == Sign.POS) {
                 if (right.sign == Sign.NEG || right.sign == Sign.POS)
-                    return right.negate();
+                    return new ExtSignDomain(right.sign);
                 else if (right.sign == Sign.ZERO_NEG)
                     return new ExtSignDomain(Sign.NEG);
                 else if (right.sign == Sign.ZERO_POS)
                     return new ExtSignDomain(Sign.POS);
-                else if (right.sign == Sign.ZERO)
-                    return new ExtSignDomain(Sign.ZERO);
             } else if (left.sign == Sign.ZERO_NEG) {
                 if (right.sign == Sign.NEG || right.sign == Sign.ZERO_NEG)
                     return new ExtSignDomain(Sign.ZERO_POS);
                 else if (right.sign == Sign.POS || right.sign == Sign.ZERO_POS)
                     return new ExtSignDomain(Sign.ZERO_NEG);
-                else if (right.sign == Sign.ZERO)
-                    return bottom();
             } else if (left.sign == Sign.ZERO_POS) {
                 if (right.sign == Sign.NEG || right.sign == Sign.ZERO_NEG)
                     return new ExtSignDomain(Sign.ZERO_NEG);
                 else if (right.sign == Sign.POS || right.sign == Sign.ZERO_POS)
                     return new ExtSignDomain(Sign.ZERO_POS);
-                else if (right.sign == Sign.ZERO)
-                    return bottom();
             }
         }
         return top();
