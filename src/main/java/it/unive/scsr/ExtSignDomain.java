@@ -152,16 +152,16 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     @Override
-    public ExtSignDomain evalUnaryExpression(UnaryOperator operator, ExtSignDomain arg, ProgramPoint pp) throws SemanticException {
-        if (operator instanceof NumericNegation) {
-            return arg.negate();
+    public ExtSignDomain evalUnaryExpression(UnaryOperator oper, ExtSignDomain esd, ProgramPoint pp) throws SemanticException {
+        if (oper instanceof NumericNegation) {
+            return esd.negate();
         } else {
             return top();
         }
     }
 
-    public ExtSignDomain evalBinaryExpression(BinaryOperator operator, ExtSignDomain left, ExtSignDomain right, ProgramPoint pp) throws SemanticException {
-        if (operator instanceof AdditionOperator) {
+    public ExtSignDomain evalBinaryExpression(BinaryOperator oper, ExtSignDomain left, ExtSignDomain right, ProgramPoint pp) throws SemanticException {
+        if (oper instanceof AdditionOperator) {
             switch (left.sign) {
                 case MINUS:
                     if (right.sign == Sign.MINUS || right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS)
@@ -176,9 +176,8 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                         return new ExtSignDomain(Sign.TOP);
                 case PLUS:
                     if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.PLUS);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_PLUS || right.sign == Sign.PLUS)
+                        return new ExtSignDomain(Sign.PLUS);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case ZERO_PLUS:
                     if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
@@ -196,7 +195,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
             }
-        } else if (operator instanceof SubtractionOperator) {
+        } else if (oper instanceof SubtractionOperator) {
             switch (left.sign) {
                 case MINUS:
                     if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
@@ -230,7 +229,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
             }
-        } else if (operator instanceof Multiplication) {
+        } else if (oper instanceof Multiplication) {
             switch (left.sign) {
                 case MINUS:
                     if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
@@ -263,11 +262,11 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                         return new ExtSignDomain(Sign.ZERO_MINUS);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case TOP:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                    if (right.sign == Sign.TOP || right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
                         return new ExtSignDomain(Sign.TOP);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
             }
-        } else if (operator instanceof DivisionOperator) {
+        } else if (oper instanceof DivisionOperator) {
             switch (left.sign) {
                 case MINUS:
                     if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
