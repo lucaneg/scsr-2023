@@ -199,7 +199,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     private ExtSignDomain evalDivision( ExtSignDomain left, ExtSignDomain right ) {
-        if ( right == ZERO )
+        if ( right == ZERO || right == ZERO_OR_NEGATIVE || right == ZERO_OR_POSITIVE )
             return BOTTOM;
         return evalMultiplication( left, right );
     }
