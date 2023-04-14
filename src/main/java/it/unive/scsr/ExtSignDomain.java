@@ -54,12 +54,12 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
         return (this.equals(NEGATIVE) && other.equals(ZERO_OR_NEGATIVE)) ||
                 (this.equals(ZERO) && other.equals(ZERO_OR_NEGATIVE)) ||
                 (this.equals(ZERO) && other.equals(ZERO_OR_POSITIVE)) ||
-                (this.equals(POSITIVE) && other.equals(POSITIVE));
+                (this.equals(POSITIVE) && other.equals(ZERO_OR_POSITIVE));
     }
 
     @Override
     public int hashCode() {
-        return 31 + sign;
+        return sign;
     }
 
     @Override
@@ -209,7 +209,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 return TOP;
             }
         } else if (operator instanceof DivisionOperator) {
-            if (left == ZERO || right == ZERO) {
+            if (right == ZERO) {
+                return BOTTOM;
+            } else if (left == ZERO) {
                 return ZERO;
             } else if (left == TOP || right == TOP) {
                 return TOP;
@@ -236,7 +238,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 return right.negate();
             } else if (left == ZERO_OR_POSITIVE) {
                 if (right == POSITIVE) {
-                    return ZERO_OR_NEGATIVE;
+                    return ZERO_OR_POSITIVE;
                 } else if (right == NEGATIVE) {
                     return ZERO_OR_NEGATIVE;
                 }
