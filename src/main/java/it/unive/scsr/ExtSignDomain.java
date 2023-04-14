@@ -5,8 +5,9 @@ import it.unive.lisa.analysis.nonrelational.value.BaseNonRelationalValueDomain;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.program.cfg.statement.numeric.Multiplication;
+
 import it.unive.lisa.symbolic.value.Constant;
+import it.unive.lisa.symbolic.value.operator.MultiplicationOperator;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
 import it.unive.lisa.symbolic.value.operator.DivisionOperator;
 import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
@@ -229,7 +230,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
             }
-        } else if (oper instanceof Multiplication) {
+        } else if (oper instanceof MultiplicationOperator) {
             switch (left.sign) {
                 case MINUS:
                     if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
