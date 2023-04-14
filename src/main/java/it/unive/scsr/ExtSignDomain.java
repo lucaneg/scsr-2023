@@ -29,7 +29,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     enum Sign {
-        BOTTOM, MINUS, ZERO_MINUS, ZERO, ZERO_PLUS, PLUS, TOP;
+        BOTTOM, NEGATIVE, ZERO_OR_NEGATIVE, ZERO, ZERO_OR_POSITIVE, POSITIVE, TOP;
     }
 
     @Override
@@ -45,9 +45,9 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     public ExtSignDomain evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
         if (constant.getValue() instanceof Integer) {
             int v = (Integer) constant.getValue();
-            if (v > 0) return new ExtSignDomain(Sign.PLUS);
+            if (v > 0) return new ExtSignDomain(Sign.POSITIVE);
             else if (v == 0) return new ExtSignDomain(Sign.ZERO);
-            else return new ExtSignDomain(Sign.MINUS);
+            else return new ExtSignDomain(Sign.NEGATIVE);
         }
         return top();
     }
@@ -56,35 +56,35 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     public ExtSignDomain lubAux(ExtSignDomain other) throws SemanticException {
         if (this.sign != null && other.sign != null) {
             switch (this.sign) {
-                case MINUS:
-                    if (other.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.PLUS) return new ExtSignDomain(Sign.TOP);
+                case NEGATIVE:
+                    if (other.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.TOP);
                     break;
-                case ZERO_MINUS:
-                    if (other.sign == Sign.MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.PLUS) return new ExtSignDomain(Sign.TOP);
+                case ZERO_OR_NEGATIVE:
+                    if (other.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.TOP);
                     break;
                 case ZERO:
-                    if (other.sign == Sign.MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (other.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (other.sign == Sign.PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (other.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (other.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (other.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     break;
-                case ZERO_PLUS:
-                    if (other.sign == Sign.MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (other.sign == Sign.PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                case ZERO_OR_POSITIVE:
+                    if (other.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (other.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     break;
-                case PLUS:
-                    if (other.sign == Sign.MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (other.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                case POSITIVE:
+                    if (other.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (other.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (other.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     break;
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
@@ -96,10 +96,10 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     @Override
     public boolean lessOrEqualAux(ExtSignDomain other) throws SemanticException {
         if (this.sign != null && other.sign != null) {
-            if (this.sign == Sign.PLUS || this.sign == Sign.ZERO || this.sign == Sign.MINUS) {
+            if (this.sign == Sign.POSITIVE || this.sign == Sign.ZERO || this.sign == Sign.NEGATIVE) {
                 return true;
-            } else if (this.sign == Sign.ZERO_PLUS || this.sign == Sign.ZERO_MINUS) {
-                if (other.sign == Sign.ZERO_MINUS || other.sign == Sign.ZERO_PLUS) {
+            } else if (this.sign == Sign.ZERO_OR_POSITIVE || this.sign == Sign.ZERO_OR_NEGATIVE) {
+                if (other.sign == Sign.ZERO_OR_NEGATIVE || other.sign == Sign.ZERO_OR_POSITIVE) {
                     return true;
                 }
             }
@@ -125,6 +125,7 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
 
     @Override
     public DomainRepresentation representation() {
+
         return new StringRepresentation(this.sign);
     }
 
@@ -139,14 +140,14 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     }
 
     private ExtSignDomain negate() {
-        if (this.sign == Sign.MINUS) {
-            return new ExtSignDomain(Sign.PLUS);
-        } else if (this.sign == Sign.PLUS) {
-            return new ExtSignDomain(Sign.MINUS);
-        } else if (this.sign == Sign.ZERO_MINUS) {
-            return new ExtSignDomain(Sign.ZERO_PLUS);
-        } else if (this.sign == Sign.ZERO_PLUS) {
-            return new ExtSignDomain(Sign.ZERO_MINUS);
+        if (this.sign == Sign.NEGATIVE) {
+            return new ExtSignDomain(Sign.POSITIVE);
+        } else if (this.sign == Sign.POSITIVE) {
+            return new ExtSignDomain(Sign.NEGATIVE);
+        } else if (this.sign == Sign.ZERO_OR_NEGATIVE) {
+            return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+        } else if (this.sign == Sign.ZERO_OR_POSITIVE) {
+            return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
         } else {
             return this;
         }
@@ -164,145 +165,145 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
     public ExtSignDomain evalBinaryExpression(BinaryOperator oper, ExtSignDomain left, ExtSignDomain right, ProgramPoint pp) throws SemanticException {
         if (oper instanceof AdditionOperator) {
             switch (left.sign) {
-                case MINUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.TOP || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                case NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.TOP || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.TOP);
-                case ZERO_MINUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (right.sign == Sign.TOP || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                case ZERO_OR_NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (right.sign == Sign.TOP || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.TOP);
-                case PLUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_PLUS || right.sign == Sign.PLUS)
-                        return new ExtSignDomain(Sign.PLUS);
+                case POSITIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_POSITIVE || right.sign == Sign.POSITIVE)
+                        return new ExtSignDomain(Sign.POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case ZERO_PLUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.PLUS);
+                case ZERO_OR_POSITIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_POSITIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case ZERO:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
             }
         } else if (oper instanceof SubtractionOperator) {
             switch (left.sign) {
-                case MINUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.MINUS);
+                case NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
+                        return new ExtSignDomain(Sign.NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case ZERO_MINUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.MINUS);
+                case ZERO_OR_NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_POSITIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case ZERO:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_MINUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case ZERO_PLUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (right.sign == Sign.TOP || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                case ZERO_OR_POSITIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (right.sign == Sign.TOP || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.TOP);
-                case PLUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.TOP || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                case POSITIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.TOP || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.TOP);
                 case TOP:
                     return new ExtSignDomain(Sign.TOP);
             }
         } else if (oper instanceof MultiplicationOperator) {
             switch (left.sign) {
-                case MINUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                case NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_MINUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case PLUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO_MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
+                case POSITIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO_OR_NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO_PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO_OR_POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case ZERO:
                     return new ExtSignDomain(Sign.ZERO);
-                case ZERO_PLUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.ZERO_MINUS);
+                case ZERO_OR_POSITIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case ZERO_MINUS:
-                    if (right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS)
-                        return new ExtSignDomain(Sign.ZERO_PLUS);
+                case ZERO_OR_NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
-                        return new ExtSignDomain(Sign.ZERO_MINUS);
+                    if (right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
+                        return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case TOP:
-                    if (right.sign == Sign.TOP || right.sign == Sign.MINUS || right.sign == Sign.ZERO_MINUS || right.sign == Sign.PLUS || right.sign == Sign.ZERO_PLUS)
+                    if (right.sign == Sign.TOP || right.sign == Sign.NEGATIVE || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.POSITIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.TOP);
                     if (right.sign == Sign.ZERO) return new ExtSignDomain(Sign.ZERO);
             }
         } else if (oper instanceof DivisionOperator) {
             switch (left.sign) {
-                case MINUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.PLUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                case NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.POSITIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.MINUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case PLUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.MINUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                case POSITIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.NEGATIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.PLUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case ZERO:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.ZERO);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.ZERO);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS || right.sign == Sign.TOP) return new ExtSignDomain(Sign.ZERO);
-                case ZERO_MINUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.ZERO_PLUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                    if (right.sign == Sign.POSITIVE || right.sign == Sign.TOP) return new ExtSignDomain(Sign.ZERO);
+                case ZERO_OR_NEGATIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.ZERO_MINUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
-                case ZERO_PLUS:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.ZERO_MINUS);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                case ZERO_OR_POSITIVE:
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.ZERO_OR_NEGATIVE);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS) return new ExtSignDomain(Sign.ZERO_PLUS);
+                    if (right.sign == Sign.POSITIVE) return new ExtSignDomain(Sign.ZERO_OR_POSITIVE);
                     if (right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
                 case TOP:
-                    if (right.sign == Sign.MINUS) return new ExtSignDomain(Sign.TOP);
-                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_MINUS || right.sign == Sign.ZERO_PLUS)
+                    if (right.sign == Sign.NEGATIVE) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.ZERO || right.sign == Sign.ZERO_OR_NEGATIVE || right.sign == Sign.ZERO_OR_POSITIVE)
                         return new ExtSignDomain(Sign.BOTTOM);
-                    if (right.sign == Sign.PLUS || right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
+                    if (right.sign == Sign.POSITIVE || right.sign == Sign.TOP) return new ExtSignDomain(Sign.TOP);
 
             }
         }
