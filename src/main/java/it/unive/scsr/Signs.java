@@ -16,24 +16,24 @@ import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
 import it.unive.lisa.symbolic.value.operator.unary.UnaryOperator;
 
 public class Signs
-		 instances of this class are lattice elements such that
-		 - their state (fields) hold the information contained into a single
-		 element
-		 - they provide logic for the evaluation of expressions
-		extends BaseNonRelationalValueDomain
-				 java requires this type parameter to have this class
-				 as type in fieldsmethods
-				Signs {
+		// instances of this class are lattice elements such that:
+		// - their state (fields) hold the information contained into a single
+		// element
+		// - they provide logic for the evaluation of expressions
+		extends BaseNonRelationalValueDomain<
+				// java requires this type parameter to have this class
+				// as type in fields/methods
+				Signs> {
 
-	 as this is a finite lattice, we can optimize by having constant elements
-	 for each of them
+	// as this is a finite lattice, we can optimize by having constant elements
+	// for each of them
 	private static final Signs BOTTOM = new Signs(-10);
 	private static final Signs NEGATIVE = new Signs(-1);
 	private static final Signs ZERO = new Signs(0);
 	private static final Signs POSITIVE = new Signs(1);
 	private static final Signs TOP = new Signs(10);
 
-	 this is just needed to distinguish the elements
+	// this is just needed to distinguish the elements
 	private final int sign;
 
 	public Signs() {
@@ -48,7 +48,7 @@ public class Signs
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime  result + sign;
+		result = prime * result + sign;
 		return result;
 	}
 
@@ -68,29 +68,29 @@ public class Signs
 
 	@Override
 	public Signs top() {
-		 the top element of the lattice
-		 if this method does not return a constant value,
-		 you must override the isTop() method!
+		// the top element of the lattice
+		// if this method does not return a constant value,
+		// you must override the isTop() method!
 		return TOP;
 	}
 
 	@Override
 	public Signs bottom() {
-		 the bottom element of the lattice
-		 if this method does not return a constant value,
-		 you must override the isBottom() method!
+		// the bottom element of the lattice
+		// if this method does not return a constant value,
+		// you must override the isBottom() method!
 		return BOTTOM;
 	}
 
 	@Override
 	public Signs lubAux(Signs other) throws SemanticException {
-		 this and other are always incomparable when we reach here
+		// this and other are always incomparable when we reach here
 		return TOP;
 	}
 
 	@Override
 	public boolean lessOrEqualAux(Signs other) throws SemanticException {
-		 this and other are always incomparable when we reach here
+		// this and other are always incomparable when we reach here
 		return false;
 	}
 
@@ -101,19 +101,19 @@ public class Signs
 		if (this == BOTTOM)
 			return Lattice.bottomRepresentation();
 		if (this == POSITIVE)
-			return new StringRepresentation(+);
+			return new StringRepresentation("+");
 		if (this == NEGATIVE)
-			return new StringRepresentation(-);
-		return new StringRepresentation(0);
+			return new StringRepresentation("-");
+		return new StringRepresentation("0");
 	}
 	
-	 logic for evaluating expressions below
+	// logic for evaluating expressions below
 	
 	@Override
 	public Signs evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
 		if (constant.getValue() instanceof Integer) {
 			int v = (Integer) constant.getValue();
-			if (v  0)
+			if (v > 0)
 				return POSITIVE;
 			else if (v == 0)
 				return ZERO;
@@ -145,12 +145,12 @@ public class Signs
 			throws SemanticException {
 		if (operator instanceof AdditionOperator) {
 			if (left == NEGATIVE) {
-				if (right == ZERO  right == NEGATIVE)
+				if (right == ZERO || right == NEGATIVE)
 					return left;
 				else
 					return TOP;
 			} else if (left == POSITIVE) {
-				if (right == ZERO  right == POSITIVE)
+				if (right == ZERO || right == POSITIVE)
 					return left;
 				else
 					return TOP;
@@ -160,12 +160,12 @@ public class Signs
 				return TOP;
 		} else if (operator instanceof SubtractionOperator) {
 			if (left == NEGATIVE) {
-				if (right == ZERO  right == POSITIVE)
+				if (right == ZERO || right == POSITIVE)
 					return left;
 				else
 					return TOP;
 			} else if (left == POSITIVE) {
-				if (right == ZERO  right == NEGATIVE)
+				if (right == ZERO || right == NEGATIVE)
 					return left;
 				else
 					return TOP;
