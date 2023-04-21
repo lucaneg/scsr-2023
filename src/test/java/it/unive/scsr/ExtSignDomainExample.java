@@ -39,7 +39,7 @@ public class ExtSignDomainExample {
 				// value domain
 				// NOTE: the following line won't compile unless you 
 				// extend the right class in ExtSignDomain 
-				new ValueEnvironment<>(ExtSignDomain.top),
+				new ValueEnvironment<>(new ExtSignDomainSolution()),
 				// type domain
 				new TypeEnvironment<>(new InferredTypes()));
 
