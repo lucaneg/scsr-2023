@@ -21,9 +21,9 @@ public class Signs
 		// element
 		// - they provide logic for the evaluation of expressions
 		extends BaseNonRelationalValueDomain<
-		// java requires this type parameter to have this class
-		// as type in fields/methods
-		Signs> {
+				// java requires this type parameter to have this class
+				// as type in fields/methods
+				Signs> {
 
 	// as this is a finite lattice, we can optimize by having constant elements
 	// for each of them
@@ -106,9 +106,9 @@ public class Signs
 			return new StringRepresentation("-");
 		return new StringRepresentation("0");
 	}
-
+	
 	// logic for evaluating expressions below
-
+	
 	@Override
 	public Signs evalNonNullConstant(Constant constant, ProgramPoint pp) throws SemanticException {
 		if (constant.getValue() instanceof Integer) {
