@@ -1,0 +1,61 @@
+class extsign {
+
+	f0() {
+		def i = 0;
+		while (i < 10) 
+			i = i + 1;
+		return i;
+	}
+
+	f1() {
+		def a = -1;
+		def b = 0;
+   		while (b < 10) {
+        	b = b + 1;
+        	a = a - 1;
+        }
+   		return b;
+    }
+
+	f2() {
+		def x = 0;
+		def y = 0;
+		if (1 == 2) {
+			x = x * -1;
+			y = y + 1;	
+		} else {
+			x = x * -2;
+			y = y + 2;
+		}
+		
+		return;
+	}
+
+	f3() {
+		def x = 100;
+		while (x != 0) {
+			if (x % 3 == 0) {
+				x = x / 3; 
+			}  else {
+				x = -x / -2;
+			}
+		}
+		
+		def y = x * -x;
+		return;
+	}
+	
+	f4() {
+		def x = 0;
+		while (true) {
+			if (x == 0) {
+				x = x + 1;
+			} else {
+				x = x / -2;
+			}
+		}
+		
+		def y = x * 5;
+		return;
+	}
+}
