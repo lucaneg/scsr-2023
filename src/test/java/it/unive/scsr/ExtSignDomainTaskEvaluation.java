@@ -16,9 +16,9 @@ import it.unive.lisa.AnalysisException;
 import it.unive.lisa.LiSA;
 import it.unive.lisa.LiSAConfiguration;
 import it.unive.lisa.analysis.SimpleAbstractState;
-import it.unive.lisa.analysis.dataflow.DefiniteForwardDataflowDomain;
 import it.unive.lisa.analysis.heap.MonolithicHeap;
 import it.unive.lisa.analysis.nonrelational.value.TypeEnvironment;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.analysis.types.InferredTypes;
 import it.unive.lisa.imp.IMPFrontend;
 import it.unive.lisa.imp.ParsingException;
@@ -26,29 +26,26 @@ import it.unive.lisa.outputs.compare.JsonReportComparer;
 import it.unive.lisa.outputs.json.JsonReport;
 import it.unive.lisa.program.Program;
 
-public class AvailableExpressionsTaskEvaluation {
+public class ExtSignDomainTaskEvaluation {
 
 	@Test
-	public void testAvailableExpressions() throws ParsingException, AnalysisException {
-		// tested using ./tester.sh it.unive.scsr.AvailableExpressionsTaskEvaluation ae
-		
-		Program program = IMPFrontend.processFile("inputs/ae-eval.imp");
+	public void testExtendedSigns() throws ParsingException, AnalysisException {
+		Program program = IMPFrontend.processFile("inputs/ext-sign-eval.imp");
 
 		LiSAConfiguration conf = new LiSAConfiguration();
 		conf.jsonOutput = true;
 		conf.serializeResults = true;
-		conf.workdir = "outputs/ae";
+		conf.workdir = "outputs/ext-sign";
 		conf.abstractState = new SimpleAbstractState<>(
 				new MonolithicHeap(),
-				// the results have been generated using the AvailExprsSolution class
-				new DefiniteForwardDataflowDomain<>(new AvailExprsSolution()),
+				new ValueEnvironment<>(new ExtSignDomain()),
 				new TypeEnvironment<>(new InferredTypes()));
 
 		LiSA lisa = new LiSA(conf);
 		lisa.run(program);
 
-		Path expectedPath = Paths.get("expected", "available-expressions");
-		Path actualPath = Paths.get("outputs", "ae");
+		Path expectedPath = Paths.get("expected", "ext-sign");
+		Path actualPath = Paths.get("outputs", "ext-sign");
 
 		File expFile = Paths.get(expectedPath.toString(), "report.json").toFile();
 		File actFile = Paths.get(actualPath.toString(), "report.json").toFile();

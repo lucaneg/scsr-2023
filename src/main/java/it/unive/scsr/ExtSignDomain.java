@@ -436,3 +436,4 @@ public class ExtSignDomain extends BaseNonRelationalValueDomain<ExtSignDomain> {
         return result;
     }
 }
+
