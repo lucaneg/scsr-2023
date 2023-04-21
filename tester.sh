@@ -26,7 +26,7 @@ for source in $(git for-each-ref --format='%(refname:lstrip=3)' refs/remotes/ori
   fi
   
   echo "++ merging master into $source"
-  GIT_MERGE_AUTOEDIT=no git merge master >> $logfile 2>&1
+  GIT_MERGE_AUTOEDIT=no git merge -Xtheirs master >> $logfile 2>&1
   if [ $? -ne 0 ]; then
 	echo "###### merge failed on $source"
 	continue
