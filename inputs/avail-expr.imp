@@ -1,0 +1,9 @@
+class availExpr {
+	test1() {
+		def x = 5;
+		def y = x + 2;
+		x = y + 3;
+		y = y + 1;
+		x = y - 1;
+	}
+}
