@@ -6,8 +6,11 @@ import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
+import it.unive.lisa.program.cfg.CodeLocation;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.symbolic.value.UnaryExpression;
 import it.unive.lisa.symbolic.value.ValueExpression;
 import it.unive.lisa.util.numeric.IntInterval;
 import it.unive.lisa.util.numeric.MathNumber;
@@ -31,12 +34,22 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
     /**
      * The abstract bottom element.
      */
-    public static final PentagonsDomain BOTTOM = new PentagonsDomain(new Pair<>(null, null));
+    public static final PentagonsDomain BOTTOM = new PentagonsDomain(null); // new Pair<>(null, null)
 
     /**
      * The pentagon represented by this domain element.
      */
     public final Pair<HashMap<MathNumber, HashSet<MathNumber>>, IntInterval> pentagon;
+
+    /** TODO
+     * The identifier of the pentagon
+     */
+    // public final Identifier identifier;
+
+    /** TODO
+     * The place in the program where the pentagon is defined
+     */
+    // public final CodeLocation programPoint;
 
     /**
      * Builds the pentagon.
@@ -69,6 +82,16 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
      */
     public PentagonsDomain(int x, int y, int low, int high) {
         this(new MathNumber(x), new MathNumber(y), new MathNumber(low), new MathNumber(high));
+    }
+
+    /**
+     * Builds the interval.
+     *
+     * @param low  the lower bound
+     * @param high the higher bound
+     */
+    public PentagonsDomain(int low, int high) {
+        this.pentagon = new Pair<>(new HashMap<>(), new IntInterval(low, high));
     }
 
     /**
@@ -149,7 +172,7 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
 
     @Override
     public PentagonsDomain lub(PentagonsDomain other) throws SemanticException {
-        return null;
+        return top(); // TODO
     }
 
     @Override
@@ -159,27 +182,39 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
 
     @Override
     public PentagonsDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        System.out.println(expression.toString());
+        if (expression instanceof Constant) {
+            Constant c = (Constant) expression;
+            if (c.getValue() instanceof Integer) {
+                Integer i = (Integer) c.getValue();
+                return new PentagonsDomain(i, i);
+            }
+        }
+
+        if (expression instanceof Identifier) {
+            Identifier identifier = (Identifier) expression;
+        }
+        return top();
     }
 
     @Override
     public PentagonsDomain smallStepSemantics(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        return top();
     }
 
     @Override
     public PentagonsDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        return top();
     }
 
     @Override
     public PentagonsDomain forgetIdentifier(Identifier id) throws SemanticException {
-        return null;
+        return top();
     }
 
     @Override
     public PentagonsDomain forgetIdentifiersIf(Predicate<Identifier> test) throws SemanticException {
-        return null;
+        return top();
     }
 
     @Override
@@ -189,12 +224,12 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
 
     @Override
     public PentagonsDomain pushScope(ScopeToken token) throws SemanticException {
-        return null;
+        return this;
     }
 
     @Override
     public PentagonsDomain popScope(ScopeToken token) throws SemanticException {
-        return null;
+        return this;
     }
 
 // TODO not needed?
