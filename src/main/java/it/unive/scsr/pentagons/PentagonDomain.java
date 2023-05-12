@@ -8,76 +8,95 @@ import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
+import org.apache.commons.lang3.NotImplementedException;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Predicate;
 
-public class PentagonDomain<T extends ValueDomain<T>> implements ValueDomain<PentagonDomain<T>> {
+public class PentagonDomain implements ValueDomain<PentagonDomain> {
+    static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
+    static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
 
-    private StrictUpperBound sub;
+    private final PentagonType type;
+    private final Map<Identifier, PentagonElement> pentagons = new HashMap<>();
 
+    public PentagonDomain(PentagonType type) {
+        this.type = type;
+    }
 
-    @Override
-    public PentagonDomain<T> lub(PentagonDomain<T> other) throws SemanticException {
-        return null;
+    public PentagonDomain() {
+        this.type = PentagonType.GENERAL;
     }
 
     @Override
-    public boolean lessOrEqual(PentagonDomain<T> other) throws SemanticException {
-        return false;
+    public PentagonDomain lub(PentagonDomain other) throws SemanticException {
+        return TOP;
     }
 
     @Override
-    public PentagonDomain<T> top() {
-        return null;
+    public boolean lessOrEqual(PentagonDomain other) throws SemanticException {
+        throw new NotImplementedException();
     }
 
     @Override
-    public PentagonDomain<T> bottom() {
-        return null;
+    public PentagonDomain top() {
+        return TOP;
     }
 
     @Override
-    public PentagonDomain<T> assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+    public PentagonDomain bottom() {
+        return BOTTOM;
     }
 
     @Override
-    public PentagonDomain<T> smallStepSemantics(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+    public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        return this;
     }
 
     @Override
-    public PentagonDomain<T> assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+    public PentagonDomain smallStepSemantics(ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        return this;
     }
 
     @Override
-    public PentagonDomain<T> forgetIdentifier(Identifier id) throws SemanticException {
-        return null;
+    public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        return this;
     }
 
     @Override
-    public PentagonDomain<T> forgetIdentifiersIf(Predicate<Identifier> test) throws SemanticException {
-        return null;
+    public PentagonDomain forgetIdentifier(Identifier id) throws SemanticException {
+        return this;
+    }
+
+    @Override
+    public PentagonDomain forgetIdentifiersIf(Predicate<Identifier> test) throws SemanticException {
+        return this;
     }
 
     @Override
     public Satisfiability satisfies(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        throw new NotImplementedException();
     }
 
     @Override
-    public PentagonDomain<T> pushScope(ScopeToken token) throws SemanticException {
-        return null;
+    public PentagonDomain pushScope(ScopeToken token) throws SemanticException {
+        return this;
     }
 
     @Override
-    public PentagonDomain<T> popScope(ScopeToken token) throws SemanticException {
-        return null;
+    public PentagonDomain popScope(ScopeToken token) throws SemanticException {
+        return this;
     }
 
     @Override
     public DomainRepresentation representation() {
-        return null;
+        throw new NotImplementedException();
+    }
+
+    public enum PentagonType {
+        BOTTOM,
+        TOP,
+        GENERAL
     }
 }
