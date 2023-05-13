@@ -6,14 +6,11 @@ import it.unive.lisa.analysis.numeric.Interval;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.symbolic.value.Identifier;
-import it.unive.lisa.symbolic.value.ValueExpression;
+import it.unive.lisa.symbolic.value.*;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.NotImplementedException;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -86,6 +83,38 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        pentagons.values().
+                forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
+
+        pentagons.remove(id);
+        /*
+        PentagonElement element = pentagons.get(id);
+        if (element == null) {
+            element = new PentagonElement(new Interval(new MathNumbe));
+        } else {
+            element;
+        }
+        */
+
+        if (expression instanceof Constant) {
+            if (!expression.getStaticType().isNumericType() ||
+                    !expression.getStaticType().asNumericType().isIntegral()) {
+                return this;
+            }
+            Constant constant = (Constant) expression;
+            pentagons.put(id, new PentagonElement(
+                    new Interval((Integer) constant.getValue(), (Integer) constant.getValue()),
+                    new HashSet<>()));
+        }
+        /*
+        else if (expression instanceof UnaryExpression) {
+
+        } else if (expression instanceof BinaryExpression) {
+
+        } else if ()
+
+         */
+
         return this;
     }
 
