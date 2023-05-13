@@ -53,12 +53,12 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public boolean lessOrEqual(PentagonDomain that) {
-        return isIntervalLessOrEqual(getBoxDomain(that)) &&
+        return isIntervalLessOrEqual(getBoxDomain(this), getBoxDomain(that)) &&
                 isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
     }
 
-    private boolean isIntervalLessOrEqual(Map<Identifier, Interval> b2) {
-        return getBoxDomain(this).entrySet().stream().allMatch(x -> {
+    private boolean isIntervalLessOrEqual(Map<Identifier, Interval> b1, Map<Identifier, Interval> b2) {
+        return b1.entrySet().stream().allMatch(x -> {
             try {
                 return b2.containsKey(x.getKey()) && x.getValue().lessOrEqual(b2.get(x.getKey()));
             } catch (SemanticException e) {
