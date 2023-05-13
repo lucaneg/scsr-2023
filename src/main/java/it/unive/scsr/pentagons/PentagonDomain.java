@@ -52,30 +52,26 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     }
 
     @Override
-    public boolean lessOrEqual(PentagonDomain that) throws SemanticException {
-        Map<Identifier, Interval> b1, b2;
-        b1 = getBoxDomain(this);
-        b2 = getBoxDomain(that);
-        Map<Identifier, Set<Identifier>> s1, s2;
-        s1 = getSubDomain(this);
-        s2 = getSubDomain(that);
+    public boolean lessOrEqual(PentagonDomain that) {
+        return isIntervalLessOrEqual(getBoxDomain(that)) &&
+                isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
+    }
 
-        boolean isIntervalOk = b1.keySet().stream().allMatch(x -> {
+    private boolean isIntervalLessOrEqual(Map<Identifier, Interval> b2) {
+        return getBoxDomain(this).entrySet().stream().allMatch(x -> {
             try {
-                return b2.containsKey(x) && b1.get(x).lessOrEqual(b2.get(x));
+                return b2.containsKey(x.getKey()) && x.getValue().lessOrEqual(b2.get(x.getKey()));
             } catch (SemanticException e) {
                 return false;
             }
         });
-        if (!isIntervalOk) return false;
+    }
 
-        boolean isSUBOk = s2.keySet().stream().allMatch(x ->
-            s2.get(x).stream().allMatch(y -> s1.get(x).contains(y) ||
-                        b1.get(x).interval.getHigh().compareTo(b1.get(y).interval.getLow()) < 0
-            )
+    private boolean isSubLessOrEqual(Map<Identifier, Interval> b1, Map<Identifier, Set<Identifier>> s1, Map<Identifier, Set<Identifier>> s2) {
+        return s2.keySet().stream().allMatch(x -> s2.get(x).stream()
+                .allMatch(y -> s1.get(x).contains(y) ||
+                        b1.get(x).interval.getHigh().compareTo(b1.get(y).interval.getLow()) < 0)
         );
-
-        return isSUBOk;
     }
 
     @Override
