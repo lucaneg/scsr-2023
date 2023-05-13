@@ -8,11 +8,14 @@ import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.Identifier;
 import it.unive.lisa.symbolic.value.ValueExpression;
+import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class PentagonDomain implements ValueDomain<PentagonDomain> {
     static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
@@ -29,14 +32,50 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         this.type = PentagonType.GENERAL;
     }
 
+
+    private Map<Identifier, Interval> getBoxDomain(PentagonDomain p){
+        return p.pentagons.keySet().stream()
+                .map(id -> new Pair<>(id, p.pentagons.get(id).getInterval()))
+                .collect(Collectors.toMap(pair -> pair.a, pair -> pair.b));
+    }
+
+    private Map<Identifier, Set<Identifier>> getSubDomain(PentagonDomain p){
+        return p.pentagons.keySet().stream()
+                .map(id -> new Pair<>(id, p.pentagons.get(id).getSub()))
+                .collect(Collectors.toMap(pair -> pair.a, pair -> pair.b));
+    }
+
+
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
         return TOP;
     }
 
     @Override
-    public boolean lessOrEqual(PentagonDomain other) throws SemanticException {
-        throw new NotImplementedException();
+    public boolean lessOrEqual(PentagonDomain that) throws SemanticException {
+        Map<Identifier, Interval> b1, b2;
+        b1 = getBoxDomain(this);
+        b2 = getBoxDomain(that);
+        Map<Identifier, Set<Identifier>> s1, s2;
+        s1 = getSubDomain(this);
+        s2 = getSubDomain(that);
+
+        boolean isIntervalOk = b1.keySet().stream().allMatch(x -> {
+            try {
+                return b2.containsKey(x) && b1.get(x).lessOrEqual(b2.get(x));
+            } catch (SemanticException e) {
+                return false;
+            }
+        });
+        if (!isIntervalOk) return false;
+
+        boolean isSUBOk = s2.keySet().stream().allMatch(x ->
+            s2.get(x).stream().allMatch(y -> s1.get(x).contains(y) ||
+                        b1.get(x).interval.getHigh().compareTo(b1.get(y).interval.getLow()) < 0
+            )
+        );
+
+        return isSUBOk;
     }
 
     @Override
