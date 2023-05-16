@@ -17,7 +17,12 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
+public class PentagonDomain implements ValueDomain<PentagonDomain> {
+    public enum PentagonType {
+        BOTTOM,
+        TOP,
+        GENERAL
+    }
     public static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
     public static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
 
@@ -90,20 +95,23 @@ public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-
-        pentagons.values().
+        
+        PentagonDomain newDomain = this.copy();
+        
+        newDomain.pentagons.values().
                 forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
 
-        pentagons.remove(id);
+        newDomain.pentagons.remove(id);
 
 
         if (expression instanceof Constant) {
             if (!expression.getStaticType().isNumericType() ||
                     !expression.getStaticType().asNumericType().isIntegral()) {
-                return this;
+                
+                return newDomain;
             }
             Constant constant = (Constant) expression;
-            pentagons.put(id, new PentagonElement(
+            newDomain.pentagons.put(id, new PentagonElement(
                     new Interval((Integer) constant.getValue(), (Integer) constant.getValue()),
                     new HashSet<>()));
         }
@@ -115,18 +123,18 @@ public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
         } else if ()
 
          */
-
-        return this;
+        
+        return newDomain;
     }
 
     @Override
     public PentagonDomain smallStepSemantics(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return this;
+        return this.copy();
     }
 
     @Override
     public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return this;
+        return this.copy();
     }
 
     @Override
@@ -146,12 +154,12 @@ public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
 
     @Override
     public PentagonDomain pushScope(ScopeToken token) throws SemanticException {
-        return this;
+        return this.copy();
     }
 
     @Override
     public PentagonDomain popScope(ScopeToken token) throws SemanticException {
-        return this;
+        return this.copy();
     }
 
     @Override
@@ -161,15 +169,26 @@ public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
                 "\n <br>"));
     }
 
-    public enum PentagonType {
-        BOTTOM,
-        TOP,
-        GENERAL
+    @Override
+    public int hashCode() {
+        return this.pentagons.hashCode();
     }
 
     @Override
-    // FIXME: needs deep copy of the map
-    protected Object clone() throws CloneNotSupportedException {
-        return new PentagonDomain(this.type, pentagons.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+    public boolean equals(Object obj) {
+        return obj instanceof PentagonDomain && this.hashCode() == obj.hashCode();
+    }
+
+    /**
+     * Performs a deep copy of the current instance
+     * @return the copy of this
+     */
+    private PentagonDomain copy() {
+        PentagonDomain newDomain = new PentagonDomain();
+        pentagons.forEach((identifier, pentagonElement) ->
+                newDomain.pentagons.put(identifier, new PentagonElement(
+                        new Interval(pentagonElement.getInterval().interval.getLow(), pentagonElement.getInterval().interval.getHigh()),
+                        new HashSet<>(pentagonElement.getSub()))));
+        return newDomain;
     }
 }
