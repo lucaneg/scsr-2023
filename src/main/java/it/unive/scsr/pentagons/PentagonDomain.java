@@ -57,7 +57,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
-        return TOP;
+        return other.copy();
     }
 
     @Override
