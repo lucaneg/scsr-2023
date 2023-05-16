@@ -4,31 +4,38 @@ import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.numeric.Interval;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
+import it.unive.lisa.analysis.representation.SetRepresentation;
+import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.*;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public class PentagonDomain implements ValueDomain<PentagonDomain> {
-    static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
-    static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
+public class PentagonDomain implements ValueDomain<PentagonDomain>, Cloneable {
+    public static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
+    public static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
 
     private final PentagonType type;
-    private final Map<Identifier, PentagonElement> pentagons = new HashMap<>();
+    private final Map<Identifier, PentagonElement> pentagons;
 
     public PentagonDomain(PentagonType type) {
-        this.type = type;
+        this (type, new HashMap<>());
     }
 
     public PentagonDomain() {
-        this.type = PentagonType.GENERAL;
+        this(PentagonType.GENERAL, new HashMap<>());
     }
 
+    private PentagonDomain(PentagonType type, Map<Identifier, PentagonElement> pentagons){
+        this.type = type;
+        this.pentagons = pentagons;
+    }
 
     private Map<Identifier, Interval> getBoxDomain(PentagonDomain p){
         return p.pentagons.keySet().stream()
@@ -83,18 +90,12 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
+
         pentagons.values().
                 forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
 
         pentagons.remove(id);
-        /*
-        PentagonElement element = pentagons.get(id);
-        if (element == null) {
-            element = new PentagonElement(new Interval(new MathNumbe));
-        } else {
-            element;
-        }
-        */
+
 
         if (expression instanceof Constant) {
             if (!expression.getStaticType().isNumericType() ||
@@ -140,7 +141,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public Satisfiability satisfies(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        throw new NotImplementedException();
+        return Satisfiability.UNKNOWN;
     }
 
     @Override
@@ -155,12 +156,20 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public DomainRepresentation representation() {
-        throw new NotImplementedException();
+        return new StringRepresentation(StringUtils.join(
+                pentagons.entrySet().stream().map(e -> e.getKey().getName() + " -> " + e.getValue().representation().toString()).collect(Collectors.toList()),
+                "\n <br>"));
     }
 
     public enum PentagonType {
         BOTTOM,
         TOP,
         GENERAL
+    }
+
+    @Override
+    // FIXME: needs deep copy of the map
+    protected Object clone() throws CloneNotSupportedException {
+        return new PentagonDomain(this.type, pentagons.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
     }
 }
