@@ -29,17 +29,28 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     private final PentagonType type;
     private final Map<Identifier, PentagonElement> pentagons;
 
-    public PentagonDomain(PentagonType type) {
-        this (type, new HashMap<>());
-    }
-
     public PentagonDomain() {
         this(PentagonType.GENERAL, new HashMap<>());
+    }
+
+    public PentagonDomain(PentagonType type) {
+        this (type, new HashMap<>());
     }
 
     private PentagonDomain(PentagonType type, Map<Identifier, PentagonElement> pentagons){
         this.type = type;
         this.pentagons = pentagons;
+    }
+
+    @Override
+    public PentagonDomain lub(PentagonDomain other) throws SemanticException {
+        return TOP;
+    }
+
+    @Override
+    public boolean lessOrEqual(PentagonDomain that) {
+        return isIntervalLessOrEqual(getBoxDomain(this), getBoxDomain(that)) &&
+                isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
     }
 
     private Map<Identifier, Interval> getBoxDomain(PentagonDomain p){
@@ -52,18 +63,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return p.pentagons.keySet().stream()
                 .map(id -> new Pair<>(id, p.pentagons.get(id).getSub()))
                 .collect(Collectors.toMap(pair -> pair.a, pair -> pair.b));
-    }
-
-
-    @Override
-    public PentagonDomain lub(PentagonDomain other) throws SemanticException {
-        return other.copy();
-    }
-
-    @Override
-    public boolean lessOrEqual(PentagonDomain that) {
-        return isIntervalLessOrEqual(getBoxDomain(this), getBoxDomain(that)) &&
-                isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
     }
 
     private boolean isIntervalLessOrEqual(Map<Identifier, Interval> b1, Map<Identifier, Interval> b2) {
@@ -176,7 +175,9 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof PentagonDomain && this.hashCode() == obj.hashCode();
+        if (this == obj) return true;
+        if (!(obj instanceof PentagonDomain)) return false;
+        return this.type == ((PentagonDomain) obj).type && this.pentagons.equals(((PentagonDomain) obj).pentagons);
     }
 
     /**
