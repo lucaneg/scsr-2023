@@ -9,6 +9,7 @@ import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.value.*;
+import it.unive.lisa.util.numeric.IntInterval;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -42,9 +43,58 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         this.pentagons = pentagons;
     }
 
+
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
-        return TOP;
+        Set<Identifier> ids = new HashSet<>();
+        ids.addAll(this.pentagons.keySet());
+        ids.addAll(other.pentagons.keySet());
+
+        PentagonDomain lub = new PentagonDomain();
+
+        ids.forEach(id -> {
+            PentagonElement element;
+            if(!this.pentagons.containsKey(id)){
+                element = other.pentagons.get(id);
+            }
+            else if(!other.pentagons.containsKey(id)){
+                element = this.pentagons.get(id);
+            } else {
+                Set<Identifier> elementSub;
+
+                element = new PentagonElement(
+                        getIntervalLub(other, id),
+                        getSubLub(other, id)
+                );
+            }
+            lub.pentagons.put(id, element);
+        });
+
+        return lub;
+    }
+
+    private Interval getIntervalLub(PentagonDomain other, Identifier id){
+        Interval intvLub;
+
+        Interval thisInterval = this.pentagons.get(id).getInterval();
+        Interval otherInterval = other.pentagons.get(id).getInterval();
+
+        if (thisInterval.isTop() || otherInterval.isTop()){
+            intvLub = Interval.TOP;
+        } else {
+            intvLub = new Interval(
+                    thisInterval.interval.getLow().min(otherInterval.interval.getLow()),
+                    thisInterval.interval.getHigh().max(otherInterval.interval.getHigh())
+            );
+        }
+        return intvLub;
+    }
+
+    private Set<Identifier> getSubLub(PentagonDomain other, Identifier id){
+        Set<Identifier> thisSub = this.pentagons.get(id).getSub();
+        Set<Identifier> otherSub = other.pentagons.get(id).getSub();
+
+        return thisSub.stream().filter(otherSub::contains).collect(Collectors.toSet());
     }
 
     @Override
@@ -52,7 +102,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return isIntervalLessOrEqual(getBoxDomain(this), getBoxDomain(that)) &&
                 isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
     }
-
+    
     private Map<Identifier, Interval> getBoxDomain(PentagonDomain p){
         return p.pentagons.keySet().stream()
                 .map(id -> new Pair<>(id, p.pentagons.get(id).getInterval()))

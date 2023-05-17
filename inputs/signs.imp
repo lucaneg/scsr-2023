@@ -1,5 +1,14 @@
 class tutorial {
 
+    onlyInterval(b) {
+        def a = 0;
+        if (b == 0)
+            a = a + 10;
+        else
+            a = a - 10;
+        return a;
+    }
+
 	loop() {
 		def c = 1;
 		def b = 0;
