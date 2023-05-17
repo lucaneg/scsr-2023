@@ -8,7 +8,15 @@ import it.unive.lisa.analysis.representation.SetRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.program.cfg.statement.numeric.Addition;
 import it.unive.lisa.symbolic.value.*;
+import it.unive.lisa.symbolic.value.operator.AdditionOperator;
+import it.unive.lisa.symbolic.value.operator.DivisionOperator;
+import it.unive.lisa.symbolic.value.operator.MultiplicationOperator;
+import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
+import it.unive.lisa.symbolic.value.operator.binary.NumericOperation;
+import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
+import it.unive.lisa.util.numeric.MathNumber;
 import it.unive.lisa.util.numeric.IntInterval;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.NotImplementedException;
@@ -144,36 +152,70 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        
-        PentagonDomain newDomain = this.copy();
-        
-        newDomain.pentagons.values().
-                forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
-
-        newDomain.pentagons.remove(id);
-
+        PentagonDomain freshPentagon = this.copy();
+        PentagonElement element = freshPentagon.removeIdentifier(id);
 
         if (expression instanceof Constant) {
             if (!expression.getStaticType().isNumericType() ||
                     !expression.getStaticType().asNumericType().isIntegral()) {
-                
-                return newDomain;
+                return freshPentagon;
             }
             Constant constant = (Constant) expression;
-            newDomain.pentagons.put(id, new PentagonElement(
+            freshPentagon.addIdentifier(id, new PentagonElement(
                     new Interval((Integer) constant.getValue(), (Integer) constant.getValue()),
                     new HashSet<>()));
-        }
-        /*
-        else if (expression instanceof UnaryExpression) {
-
+        } else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
+            freshPentagon.addIdentifier(id, new PentagonElement(
+                    new Interval(element.getInterval().interval.getHigh().multiply(new MathNumber(-1)),
+                            element.getInterval().interval.getLow().multiply(new MathNumber(-1))),
+                    new HashSet<>()));
         } else if (expression instanceof BinaryExpression) {
 
-        } else if ()
+            if (((BinaryExpression) expression).getOperator() instanceof AdditionOperator) {
 
-         */
-        
-        return newDomain;
+                if (((BinaryExpression) expression).getLeft() instanceof Variable) {
+
+                    System.out.println(((Variable) ((BinaryExpression) expression).getLeft()).getName());
+                    System.out.println("--printing variable --");
+                }
+
+                if (((BinaryExpression) expression).getLeft() instanceof Constant) {
+                    System.out.println("--printing constant --");
+                    System.out.println(((Constant) ((BinaryExpression) expression).getLeft()).getValue());
+                }
+
+
+
+                // freshPentagon.addIdentifier(id, new PentagonElement());
+
+            } else if (((BinaryExpression) expression).getOperator() instanceof SubtractionOperator) {
+
+            } else if (((BinaryExpression) expression).getOperator() instanceof MultiplicationOperator) {
+
+            } else if (((BinaryExpression) expression).getOperator() instanceof DivisionOperator) {
+
+            }
+        }
+        return freshPentagon;
+    }
+
+    /**
+     * Removes the identifier from the pentagon
+     * @param id identifier to remove
+     */
+    private PentagonElement removeIdentifier(Identifier id) {
+        this.pentagons.values().
+                forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
+        return this.pentagons.remove(id);
+    }
+
+    /**
+     * Adds a new Identifier to the pentagon
+     * @param id the identifier
+     * @param element the corresponding PentagonElement
+     */
+    private void addIdentifier(Identifier id, PentagonElement element) {
+        this.pentagons.put(id, element);
     }
 
     @Override
