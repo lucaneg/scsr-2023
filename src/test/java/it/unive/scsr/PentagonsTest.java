@@ -35,12 +35,11 @@ public class PentagonsTest {
 		conf.analysisGraphs = GraphType.HTML;
 
 		// we specify the analysis that we want to execute
-		// FIXME: Sta andando tutto male (cit)
 		conf.abstractState = new SimpleAbstractState<>(
 				// heap domain 
 				new MonolithicHeap(),
 				// value domain
-				new PentagonDomain(), // This is broken but we still don't know how to fix it
+				new PentagonDomain(),
 				// type domain
 				new TypeEnvironment<>(new InferredTypes()));
 

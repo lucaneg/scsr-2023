@@ -4,22 +4,14 @@ import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.numeric.Interval;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
-import it.unive.lisa.analysis.representation.SetRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
-import it.unive.lisa.program.cfg.statement.numeric.Addition;
+import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
-import it.unive.lisa.symbolic.value.operator.AdditionOperator;
-import it.unive.lisa.symbolic.value.operator.DivisionOperator;
-import it.unive.lisa.symbolic.value.operator.MultiplicationOperator;
-import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
-import it.unive.lisa.symbolic.value.operator.binary.NumericOperation;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
 import it.unive.lisa.util.numeric.MathNumber;
-import it.unive.lisa.util.numeric.IntInterval;
 import org.antlr.v4.runtime.misc.Pair;
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -68,8 +60,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             else if(!other.pentagons.containsKey(id)){
                 element = this.pentagons.get(id);
             } else {
-                Set<Identifier> elementSub;
-
                 element = new PentagonElement(
                         getIntervalLub(other, id),
                         getSubLub(other, id)
@@ -153,57 +143,59 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
         PentagonDomain freshPentagon = this.copy();
-        PentagonElement element = freshPentagon.removeIdentifier(id);
+        PentagonElement oldElement = freshPentagon.removeElement(id);
 
-        if (expression instanceof Constant) {
-            if (!expression.getStaticType().isNumericType() ||
-                    !expression.getStaticType().asNumericType().isIntegral()) {
-                return freshPentagon;
-            }
-            Constant constant = (Constant) expression;
-            freshPentagon.addIdentifier(id, new PentagonElement(
-                    new Interval((Integer) constant.getValue(), (Integer) constant.getValue()),
-                    new HashSet<>()));
+        if (expression instanceof Constant && (expression.getStaticType().isNumericType() &&
+                expression.getStaticType().asNumericType().isIntegral()) ) {
+            freshPentagon.addElement(id, retrievePentagonElement(expression).orElseThrow(SemanticException::new));
         } else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
-            freshPentagon.addIdentifier(id, new PentagonElement(
-                    new Interval(element.getInterval().interval.getHigh().multiply(new MathNumber(-1)),
-                            element.getInterval().interval.getLow().multiply(new MathNumber(-1))),
+            freshPentagon.addElement(id, new PentagonElement(
+                    new Interval(oldElement.getInterval().interval.getHigh().multiply(new MathNumber(-1)),
+                            oldElement.getInterval().interval.getLow().multiply(new MathNumber(-1))),
                     new HashSet<>()));
         } else if (expression instanceof BinaryExpression) {
+            BinaryExpression binaryExpression = (BinaryExpression) expression;
+            PentagonElement left = retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
+            PentagonElement right = retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
 
-            if (((BinaryExpression) expression).getOperator() instanceof AdditionOperator) {
+            Interval freshInterval = left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
+                            left.getInterval(), right.getInterval(),
+                            pp);
+            Set<Identifier> freshSub = new HashSet<>();
 
-                if (((BinaryExpression) expression).getLeft() instanceof Variable) {
-
-                    System.out.println(((Variable) ((BinaryExpression) expression).getLeft()).getName());
-                    System.out.println("--printing variable --");
+            // for full update this callback has to run twice
+            freshPentagon.pentagons.forEach(((identifier, element) -> {
+                if (freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
+                    freshSub.add(identifier);
+                    freshSub.addAll(element.getSub());
+                } else if (freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
+                    element.getSub().add(id);
+                    element.getSub().addAll(freshSub);
                 }
+            }));
 
-                if (((BinaryExpression) expression).getLeft() instanceof Constant) {
-                    System.out.println("--printing constant --");
-                    System.out.println(((Constant) ((BinaryExpression) expression).getLeft()).getValue());
-                }
-
-
-
-                // freshPentagon.addIdentifier(id, new PentagonElement());
-
-            } else if (((BinaryExpression) expression).getOperator() instanceof SubtractionOperator) {
-
-            } else if (((BinaryExpression) expression).getOperator() instanceof MultiplicationOperator) {
-
-            } else if (((BinaryExpression) expression).getOperator() instanceof DivisionOperator) {
-
-            }
+            freshPentagon.addElement(id, new PentagonElement(freshInterval, freshSub));
         }
         return freshPentagon;
+    }
+
+    private Optional<PentagonElement> retrievePentagonElement(SymbolicExpression expression) {
+        if (expression instanceof Identifier) {
+            return Optional.of(pentagons.get((Identifier) expression));
+        } else if (expression instanceof Constant) {
+            Constant constant = (Constant) expression;
+            return Optional.of(new PentagonElement(
+                    new Interval((Integer) constant.getValue(), (Integer) constant.getValue()),
+                    new HashSet<>()));
+        }
+        return Optional.empty();
     }
 
     /**
      * Removes the identifier from the pentagon
      * @param id identifier to remove
      */
-    private PentagonElement removeIdentifier(Identifier id) {
+    private PentagonElement removeElement(Identifier id) {
         this.pentagons.values().
                 forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
         return this.pentagons.remove(id);
@@ -214,7 +206,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
      * @param id the identifier
      * @param element the corresponding PentagonElement
      */
-    private void addIdentifier(Identifier id, PentagonElement element) {
+    private void addElement(Identifier id, PentagonElement element) {
         this.pentagons.put(id, element);
     }
 
