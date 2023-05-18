@@ -52,4 +52,16 @@ public class PentagonElement {
         return new SetRepresentation(getSub().stream().map( i -> new StringRepresentation(i.getName()) ).collect( Collectors.toSet())).toString();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof PentagonElement)) return false;
+        PentagonElement pe = (PentagonElement) obj;
+        return this.interval.equals(pe.interval) && this.sub.equals(pe.sub);
+    }
+
+    @Override
+    public String toString() {
+        return representation().toString();
+    }
 }

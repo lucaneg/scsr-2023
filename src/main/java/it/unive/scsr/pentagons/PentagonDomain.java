@@ -7,13 +7,22 @@ import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.program.cfg.statement.comparison.GreaterOrEqual;
+import it.unive.lisa.program.cfg.statement.comparison.GreaterThan;
+import it.unive.lisa.program.cfg.statement.comparison.LessOrEqual;
+import it.unive.lisa.program.cfg.statement.comparison.LessThan;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
+import it.unive.lisa.symbolic.value.operator.LogicalOperator;
+import it.unive.lisa.symbolic.value.operator.binary.ComparisonLt;
+import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
+import it.unive.lisa.util.datastructures.graph.algorithms.FixpointException;
 import it.unive.lisa.util.numeric.MathNumber;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.swing.text.html.Option;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -76,6 +85,11 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
         Interval thisInterval = this.pentagons.get(id).getInterval();
         Interval otherInterval = other.pentagons.get(id).getInterval();
+
+        if(thisInterval.isBottom())
+            return otherInterval;
+        if(otherInterval.isBottom())
+            return thisInterval;
 
         if (thisInterval.isTop() || otherInterval.isTop()){
             intvLub = Interval.TOP;
@@ -158,17 +172,17 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             PentagonElement left = retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
             PentagonElement right = retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
 
-            Interval freshInterval = left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
+            Interval freshInterval = left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
                             left.getInterval(), right.getInterval(),
                             pp);
             Set<Identifier> freshSub = new HashSet<>();
 
             // for full update this callback has to run twice
             freshPentagon.pentagons.forEach(((identifier, element) -> {
-                if (freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
+                if (!freshInterval.isBottom() && freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
                     freshSub.add(identifier);
                     freshSub.addAll(element.getSub());
-                } else if (freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
+                } else if (!freshInterval.isBottom() && freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
                     element.getSub().add(id);
                     element.getSub().addAll(freshSub);
                 }
@@ -216,8 +230,102 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return this.copy();
     }
 
+    private PentagonDomain negateLogicalBinaryExpression(BinaryExpression expression) throws SemanticException{
+        PentagonElement left = retrievePentagonElement(expression.getLeft()).orElseGet(() -> PentagonElement.TOP);
+        PentagonElement right = retrievePentagonElement(expression.getRight()).orElseGet(() -> PentagonElement.TOP);
+        Optional<Identifier> leftIdentifier = expression.getLeft() instanceof Identifier ? Optional.of((Identifier) expression.getLeft()) : Optional.empty();
+        Optional<Identifier> rightIdentifier = expression.getRight() instanceof Identifier ? Optional.of((Identifier) expression.getRight()) : Optional.empty();
+
+        // leftIdentifier.ifPresent(this::removeElement);
+        // rightIdentifier.ifPresent(this::removeElement);
+
+        if(expression.getOperator() instanceof ComparisonLt){ // l >= r -> [ r |-> s(r) U s(l) ]
+            compareGE(left, right, leftIdentifier, rightIdentifier);
+        }
+        return this.copy();
+    }
+
+    private PentagonDomain compareGE(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+        Interval leftInterval, rightInterval;
+        if (!right.getInterval().isBottom() && !left.getInterval().isBottom() && right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getHigh()) <= 0)
+            leftInterval = new Interval(right.getInterval().interval.getHigh(), left.getInterval().interval.getHigh());
+        else
+            leftInterval = Interval.BOTTOM;
+        if (!right.getInterval().isBottom() && !left.getInterval().isBottom() && right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) <= 0)
+            rightInterval = new Interval(right.getInterval().interval.getLow(), left.getInterval().interval.getLow());
+        else
+            rightInterval = Interval.BOTTOM;
+
+        right.getSub().addAll(left.getSub());
+
+        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
+            leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+
+        System.out.println(leftInterval);
+
+
+        Interval finalLeftInterval = leftInterval;
+        leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
+        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(rightInterval, right.getSub())));
+
+        return this;
+    }
+
+    private PentagonDomain compareLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier) {
+        Interval leftInterval, rightInterval;
+        if (right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getHigh()) <= 0)
+            leftInterval = new Interval(right.getInterval().interval.getHigh(), left.getInterval().interval.getHigh());
+        else
+            leftInterval = Interval.BOTTOM;
+        if (right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) <= 0)
+            rightInterval = new Interval(right.getInterval().interval.getLow(), left.getInterval().interval.getLow());
+        else
+            rightInterval = Interval.BOTTOM;
+
+        right.getSub().addAll(left.getSub());
+
+        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
+            leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+
+        System.out.println(leftInterval);
+
+
+        Interval finalLeftInterval = leftInterval;
+        leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
+        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(rightInterval, right.getSub())));
+
+        return this;
+    }
+
+
     @Override
     public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        PentagonDomain freshPentagon = this.copy();
+
+
+        if(expression instanceof UnaryExpression){
+            UnaryExpression unaryExpression = (UnaryExpression) expression;
+            System.out.println(unaryExpression);
+
+            if (unaryExpression.getOperator() instanceof LogicalNegation){
+                return freshPentagon.negateLogicalBinaryExpression((BinaryExpression) unaryExpression.getExpression());
+            }
+
+            return freshPentagon;
+        }
+
+        BinaryExpression exp = (BinaryExpression) expression;
+
+        if (exp.getOperator() instanceof ComparisonLt){
+            PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
+            PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
+            Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
+            Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
+
+            return compareLT(left, right, leftIdentifier, rightIdentifier);
+        }
+
+
         return this.copy();
     }
 
@@ -262,6 +370,9 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof PentagonDomain)) return false;
+        System.out.println(this.pentagons);
+        System.out.println(((PentagonDomain) obj).pentagons);
+        System.out.println(this.type == ((PentagonDomain) obj).type && this.pentagons.equals(((PentagonDomain) obj).pentagons));
         return this.type == ((PentagonDomain) obj).type && this.pentagons.equals(((PentagonDomain) obj).pentagons);
     }
 
@@ -273,7 +384,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         PentagonDomain newDomain = new PentagonDomain();
         pentagons.forEach((identifier, pentagonElement) ->
                 newDomain.pentagons.put(identifier, new PentagonElement(
-                        new Interval(pentagonElement.getInterval().interval.getLow(), pentagonElement.getInterval().interval.getHigh()),
+                        pentagonElement.getInterval().isBottom() ? Interval.BOTTOM : new Interval(pentagonElement.getInterval().interval.getLow(), pentagonElement.getInterval().interval.getHigh()),
                         new HashSet<>(pentagonElement.getSub()))));
         return newDomain;
     }
