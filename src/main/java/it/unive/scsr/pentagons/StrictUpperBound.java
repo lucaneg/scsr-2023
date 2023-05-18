@@ -10,6 +10,7 @@ import it.unive.lisa.symbolic.value.ValueExpression;
 
 import java.util.function.Predicate;
 
+@Deprecated
 public class StrictUpperBound<T extends ValueDomain<T>> implements ValueDomain<StrictUpperBound<T>> {
     @Override
     public StrictUpperBound<T> lub(StrictUpperBound<T> other) throws SemanticException {

@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class PentagonElement {
+    public static PentagonElement TOP = new PentagonElement(Interval.TOP, Set.of());
     private Interval interval;
     private Set<Identifier> sub;
 
