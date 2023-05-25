@@ -14,6 +14,7 @@ import it.unive.lisa.program.cfg.statement.comparison.LessThan;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
 import it.unive.lisa.symbolic.value.operator.LogicalOperator;
+import it.unive.lisa.symbolic.value.operator.binary.ComparisonGe;
 import it.unive.lisa.symbolic.value.operator.binary.ComparisonLt;
 import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
@@ -179,10 +180,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
             // for full update this callback has to run twice
             freshPentagon.pentagons.forEach(((identifier, element) -> {
-                if (!freshInterval.isBottom() && freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
+                if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
                     freshSub.add(identifier);
                     freshSub.addAll(element.getSub());
-                } else if (!freshInterval.isBottom() && freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
+                } else if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
                     element.getSub().add(id);
                     element.getSub().addAll(freshSub);
                 }
@@ -258,6 +259,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
         right.getSub().addAll(left.getSub());
 
+        // FIXME
         if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
             leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
 
@@ -271,19 +273,23 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return this;
     }
 
+    // FIXME: since is strict less or equals, left high should be -1, right low should be +1
     private PentagonDomain compareLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier) {
         Interval leftInterval, rightInterval;
-        if (right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getHigh()) <= 0)
-            leftInterval = new Interval(right.getInterval().interval.getHigh(), left.getInterval().interval.getHigh());
+        if (right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) >= 0)
+            leftInterval = new Interval(left.getInterval().interval.getLow(), right.getInterval().interval.getLow().add(new MathNumber(0)));
         else
             leftInterval = Interval.BOTTOM;
-        if (right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) <= 0)
-            rightInterval = new Interval(right.getInterval().interval.getLow(), left.getInterval().interval.getLow());
+
+        if (left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getHigh()) <= 0)
+            rightInterval = new Interval(left.getInterval().interval.getHigh().add(new MathNumber(0)), right.getInterval().interval.getHigh());
         else
             rightInterval = Interval.BOTTOM;
 
-        right.getSub().addAll(left.getSub());
+        left.getSub().addAll(right.getSub());
+        rightIdentifier.ifPresent(id -> left.getSub().add(id));
 
+        // FIXME
         if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
             leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
 
@@ -313,17 +319,23 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
             return freshPentagon;
         }
+        if(expression instanceof BinaryExpression){
+            BinaryExpression exp = (BinaryExpression) expression;
 
-        BinaryExpression exp = (BinaryExpression) expression;
-
-        if (exp.getOperator() instanceof ComparisonLt){
             PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
             PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
             Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
             Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
 
-            return compareLT(left, right, leftIdentifier, rightIdentifier);
+            if (exp.getOperator() instanceof ComparisonLt){
+                return compareLT(left, right, leftIdentifier, rightIdentifier);
+            }
+            if (exp.getOperator() instanceof ComparisonGe){
+                return compareGE(left, right, leftIdentifier, rightIdentifier);
+            }
         }
+
+
 
 
         return this.copy();
