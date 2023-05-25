@@ -196,8 +196,9 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     private Optional<PentagonElement> retrievePentagonElement(SymbolicExpression expression) {
         if (expression instanceof Identifier) {
-            return Optional.of(Objects.requireNonNullElseGet(pentagons.get((Identifier) expression),
-                    () -> PentagonElement.TOP));
+            Identifier identifier = (Identifier) expression;
+            pentagons.putIfAbsent(identifier, PentagonElement.TOP);
+            return Optional.of(pentagons.get(identifier));
         } else if (expression instanceof Constant) {
             Constant constant = (Constant) expression;
             return Optional.of(new PentagonElement(
