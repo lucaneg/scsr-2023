@@ -15,6 +15,8 @@ import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
 import it.unive.lisa.symbolic.value.operator.LogicalOperator;
 import it.unive.lisa.symbolic.value.operator.binary.ComparisonGe;
+import it.unive.lisa.symbolic.value.operator.binary.ComparisonGt;
+import it.unive.lisa.symbolic.value.operator.binary.ComparisonLe;
 import it.unive.lisa.symbolic.value.operator.binary.ComparisonLt;
 import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
@@ -36,6 +38,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     }
     public static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
     public static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
+
+    private static final Integer WIDENING_LIMIT = 50;
 
     private final PentagonType type;
     private final Map<Identifier, PentagonElement> pentagons;
@@ -241,65 +245,102 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // leftIdentifier.ifPresent(this::removeElement);
         // rightIdentifier.ifPresent(this::removeElement);
 
-        if(expression.getOperator() instanceof ComparisonLt){ // l >= r -> [ r |-> s(r) U s(l) ]
-            compareGE(left, right, leftIdentifier, rightIdentifier);
+        if (expression.getOperator() instanceof ComparisonLt){ // !(left < right) -> left >= right -> right <= left
+            return compareLE(right, left, rightIdentifier, leftIdentifier);
         }
+        if (expression.getOperator() instanceof ComparisonGt){ // !(left > right) -> left <= right
+            return compareLE(left, right, leftIdentifier, rightIdentifier);
+        }
+        if (expression.getOperator() instanceof ComparisonLe){ // !(left <= right) -> left > right -> right < left
+            return compareLT(right, left, rightIdentifier, leftIdentifier);
+        }
+        if (expression.getOperator() instanceof ComparisonGe){ // !(left >= right) -> left < right
+            return compareLT(left, right, leftIdentifier, rightIdentifier);
+        }
+
         return this.copy();
     }
 
-    private PentagonDomain compareGE(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+    private PentagonDomain compareLE(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
         Interval leftInterval, rightInterval;
-        if (!right.getInterval().isBottom() && !left.getInterval().isBottom() && right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getHigh()) <= 0)
-            leftInterval = new Interval(right.getInterval().interval.getHigh(), left.getInterval().interval.getHigh());
-        else
+        // update left interval as described in the javadoc
+        try {
+            leftInterval = new Interval(left.getInterval().interval.getLow(), left.getInterval().interval.getHigh().min(right.getInterval().interval.getLow()));
+        } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
-        if (!right.getInterval().isBottom() && !left.getInterval().isBottom() && right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) <= 0)
-            rightInterval = new Interval(right.getInterval().interval.getLow(), left.getInterval().interval.getLow());
-        else
+        }
+
+        // update right interval as described in the javadoc
+        try {
+            rightInterval = new Interval(right.getInterval().interval.getHigh().max(left.getInterval().interval.getLow()), right.getInterval().interval.getHigh());
+        } catch (IllegalArgumentException exception) {
             rightInterval = Interval.BOTTOM;
+        }
 
-        right.getSub().addAll(left.getSub());
-
-        // FIXME
-        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
+        // widening
+        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(WIDENING_LIMIT)) > 0)
             leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+        if(!rightInterval.isBottom() && rightInterval.interval.getHigh().compareTo(new MathNumber(WIDENING_LIMIT)) > 0)
+            rightInterval = new Interval(rightInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+        if(!leftInterval.isBottom() && leftInterval.interval.getLow().compareTo(new MathNumber(-WIDENING_LIMIT)) < 0)
+            leftInterval = new Interval(MathNumber.MINUS_INFINITY, leftInterval.interval.getHigh());
+        if(!rightInterval.isBottom() && rightInterval.interval.getLow().compareTo(new MathNumber(-WIDENING_LIMIT)) < 0)
+            rightInterval = new Interval(MathNumber.MINUS_INFINITY, rightInterval.interval.getHigh());
 
-        System.out.println(leftInterval);
+        // update left set as described in the javadoc
+        left.getSub().addAll(right.getSub()); // if right is a constant .getSub() => {}
+        rightIdentifier.ifPresent(idr -> leftIdentifier.ifPresent(idl -> pentagons.get(idr).getSub().remove(idl)));
 
-
+        // update the pentagon domain with the computed data
         Interval finalLeftInterval = leftInterval;
+        Interval finalRightInterval = rightInterval;
         leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
-        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(rightInterval, right.getSub())));
+        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalRightInterval, right.getSub())));
 
         return this;
     }
 
-    // FIXME: since is strict less or equals, left high should be -1, right low should be +1
+    /**
+     * left -> (left_low, min(left_high, right_high-1))<br>
+     * right -> (max(right_low, left_low+1), right_high)<br>
+     * sub(left) -> sub(left) U sub(right) U {right} <br>
+     * */
     private PentagonDomain compareLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier) {
         Interval leftInterval, rightInterval;
-        if (right.getInterval().interval.getLow().compareTo(left.getInterval().interval.getLow()) >= 0)
-            leftInterval = new Interval(left.getInterval().interval.getLow(), right.getInterval().interval.getLow().add(new MathNumber(0)));
-        else
+        // update left interval as described in the javadoc
+        try {
+            leftInterval = new Interval(left.getInterval().interval.getLow(), left.getInterval().interval.getHigh().min(right.getInterval().interval.getLow().add(new MathNumber(-1))));
+        } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
+        }
 
-        if (left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getHigh()) <= 0)
-            rightInterval = new Interval(left.getInterval().interval.getHigh().add(new MathNumber(0)), right.getInterval().interval.getHigh());
-        else
+        // update right interval as described in the javadoc
+        try {
+            rightInterval = new Interval(right.getInterval().interval.getHigh().max(left.getInterval().interval.getLow().add(new MathNumber(1))), right.getInterval().interval.getHigh());
+        } catch (IllegalArgumentException exception) {
             rightInterval = Interval.BOTTOM;
+        }
 
-        left.getSub().addAll(right.getSub());
-        rightIdentifier.ifPresent(id -> left.getSub().add(id));
-
-        // FIXME
-        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(50)) > 0)
+        // widening
+        if(!leftInterval.isBottom() && leftInterval.interval.getHigh().compareTo(new MathNumber(WIDENING_LIMIT)) > 0)
             leftInterval = new Interval(leftInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+        if(!rightInterval.isBottom() && rightInterval.interval.getHigh().compareTo(new MathNumber(WIDENING_LIMIT)) > 0)
+            rightInterval = new Interval(rightInterval.interval.getLow(), MathNumber.PLUS_INFINITY);
+        if(!leftInterval.isBottom() && leftInterval.interval.getLow().compareTo(new MathNumber(-WIDENING_LIMIT)) < 0)
+            leftInterval = new Interval(MathNumber.MINUS_INFINITY, leftInterval.interval.getHigh());
+        if(!rightInterval.isBottom() && rightInterval.interval.getLow().compareTo(new MathNumber(-WIDENING_LIMIT)) < 0)
+            rightInterval = new Interval(MathNumber.MINUS_INFINITY, rightInterval.interval.getHigh());
 
-        System.out.println(leftInterval);
+        // update left set as described in the javadoc
+        left.getSub().addAll(right.getSub()); // if right is a constant .getSub() => {}
+        rightIdentifier.ifPresent(id -> left.getSub().add(id)); // add the right identifier if not a constant
+        rightIdentifier.ifPresent(idr -> leftIdentifier.ifPresent(idl -> pentagons.get(idr).getSub().remove(idl)));
 
-
+        // update the pentagon domain with the computed data
         Interval finalLeftInterval = leftInterval;
+        Interval finalRightInterval = rightInterval;
         leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
-        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(rightInterval, right.getSub())));
+        rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalRightInterval, right.getSub())));
 
         return this;
     }
@@ -331,12 +372,16 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             if (exp.getOperator() instanceof ComparisonLt){
                 return compareLT(left, right, leftIdentifier, rightIdentifier);
             }
-            if (exp.getOperator() instanceof ComparisonGe){
-                return compareGE(left, right, leftIdentifier, rightIdentifier);
+            if (exp.getOperator() instanceof ComparisonGt){ // left > right -> right < left
+                return compareLT(right, left, rightIdentifier, leftIdentifier);
+            }
+            if (exp.getOperator() instanceof ComparisonLe){
+                return compareLE(left, right, leftIdentifier, rightIdentifier);
+            }
+            if (exp.getOperator() instanceof ComparisonGe){ // left >= right -> right <= left
+                return compareLE(right, left, rightIdentifier, leftIdentifier);
             }
         }
-
-
 
 
         return this.copy();

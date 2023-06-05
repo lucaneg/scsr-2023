@@ -8,11 +8,12 @@ import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.symbolic.value.Identifier;
 import org.apache.commons.lang3.NotImplementedException;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class PentagonElement {
-    public static PentagonElement TOP = new PentagonElement(Interval.TOP, Set.of());
+    public static PentagonElement TOP = new PentagonElement(Interval.TOP, new HashSet<>());
     private Interval interval;
     private Set<Identifier> sub;
 

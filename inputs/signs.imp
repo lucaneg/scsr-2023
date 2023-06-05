@@ -27,9 +27,19 @@ class tutorial {
 		def d = i / j;
 	}
 	
-	branches(a, b) {
+	branches1(a, b) {
 		def x = 0;
 		if (a > b)
+           	x = x * 7;
+       	else
+           	x = -7;
+		def y = x / x;
+    }
+
+    branches2(a, b) {
+		def x = 0;
+		b = 0;
+		if (a < b)
            	x = x * 7;
        	else
            	x = -7;
