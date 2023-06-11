@@ -436,8 +436,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             if (exp.getOperator() instanceof ComparisonGe){ // left >= right -> right <= left
                 return freshPentagon.compareLE(right, left, rightIdentifier, leftIdentifier);
             }
-            if (exp.getOperator() instanceof ComparisonEq){ // left >= right -> right <= left
-                return freshPentagon.compareLE(left, right, leftIdentifier, rightIdentifier);
+            if (exp.getOperator() instanceof ComparisonEq){
+                return freshPentagon.compareEQ(left, right, leftIdentifier, rightIdentifier);
             }
         }
 
