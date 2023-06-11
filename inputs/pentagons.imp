@@ -1,0 +1,62 @@
+class tutorial {
+
+    onlyInterval(b) {
+        def a = 0;
+        if (b == 0)
+            a = a + 10;
+        else
+            b = a - 10;
+        return a;
+    }
+
+    loop() {
+        def a = 10;
+        def c = 1;
+        def b = 0;
+           while (b < a)
+            b = b + c;
+           return b;
+    }
+
+    basic() {
+        def i = 2;
+        def j = -10;
+        def a = i + j;
+        def s = i - j;
+        def m = i * j;
+        def d = i / j;
+    }
+
+    branches1(a, b) {
+        def x = 0;
+        if (a > b)
+               x = x * 7;
+           else
+               x = -7;
+        def y = x / x;
+    }
+
+    branches2(a, b) {
+        def x = 0;
+        b = 0;
+        if (a < b)
+               x = x * 7;
+           else
+               x = -7;
+        def y = x / x;
+    }
+
+    comparisons1(x){
+        def a = 0;
+        def b = 10;
+        if (0 < x) {
+            a = 20;
+            b = 30;
+        }else{
+            def c = 100;
+        }
+        return a;
+    }
+
+
+}
