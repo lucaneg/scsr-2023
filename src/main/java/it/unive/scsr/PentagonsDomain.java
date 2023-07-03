@@ -2,6 +2,8 @@ package it.unive.scsr;
 
 import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
+import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
+import it.unive.lisa.analysis.numeric.Interval;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
@@ -13,8 +15,9 @@ import java.util.function.Predicate;
 
 public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
 
-
     // Implements PentagonsDomain constructor
+    ValueEnvironment<Interval> interval;
+    ValueEnvironment<StrictUpperBounds> strictUpperBounds;
 
     /* Lattice Operations*/
 
@@ -37,8 +40,6 @@ public class PentagonsDomain implements ValueDomain<PentagonsDomain> {
     public PentagonsDomain bottom() {
         return null;
     }
-
-    /**************************/
 
     // Assegna ad un identificativo il valore di un espressione. Ad esempio l'assegnamento di una variabile
 
