@@ -97,5 +97,111 @@ class tutorial {
 
     }
 
+    satisfiability_non_empty_intersection(x){
+        def a = 0;
+        def b = 10;
+        if (0 < x) {
+            a = 20;
+            b = 30;
+        }else{
+            def c = 50;
+        }
+
+        def breakpoint = 420;
+
+
+        if (a < b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a > b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a == b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a != b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a <= b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a >= b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        return;
+
+    }
+
+    satisfiability_empty_intersection(x){
+        def a = 0;
+        def b = 20;
+        if (0 < x) {
+            a = 10;
+            b = 30;
+        }else{
+            def c = 50;
+        }
+
+        def breakpoint = 420;
+
+
+        if (a < b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a > b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a == b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a != b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a <= b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a >= b){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        return;
+
+    }
+
 
 }
