@@ -19,6 +19,7 @@ import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
 import it.unive.lisa.symbolic.value.operator.unary.NumericNegation;
 import it.unive.lisa.util.datastructures.graph.algorithms.FixpointException;
 import it.unive.lisa.util.numeric.MathNumber;
+import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.misc.Pair;
 import org.apache.commons.lang3.StringUtils;
 
@@ -471,6 +472,53 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public Satisfiability satisfies(ValueExpression expression, ProgramPoint pp) throws SemanticException {
+        System.out.println("Satisfies: " + expression);
+
+        if (expression instanceof BinaryExpression){
+            BinaryExpression exp = (BinaryExpression) expression;
+
+            PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
+            PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
+            Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
+            Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
+
+            if (exp.getOperator() instanceof ComparisonLt){
+                return satisfiesLT(left, right, leftIdentifier, rightIdentifier);
+            }
+            if (exp.getOperator() instanceof ComparisonGt){
+                return satisfiesLT(right, left, rightIdentifier, leftIdentifier);
+            }
+            if (exp.getOperator() instanceof ComparisonEq){
+                return satisfiesEQ(left, right, leftIdentifier, rightIdentifier);
+            }
+        }
+
+
+        return Satisfiability.UNKNOWN;
+    }
+
+    public Satisfiability satisfiesLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+        if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+                left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getLow()) < 0 ){
+            return Satisfiability.SATISFIED;
+        }
+
+        if ( leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
+                right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getLow()) < 0 ){
+            return Satisfiability.NOT_SATISFIED;
+        }
+
+        return Satisfiability.UNKNOWN;
+    }
+
+    public Satisfiability satisfiesEQ(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+        if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+                leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
+                left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getLow()) < 0 ||
+                right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getLow()) < 0 ){
+            return Satisfiability.NOT_SATISFIED;
+        }
+
         return Satisfiability.UNKNOWN;
     }
 
