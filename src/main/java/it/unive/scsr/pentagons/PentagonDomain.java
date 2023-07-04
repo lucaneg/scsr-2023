@@ -169,8 +169,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             freshPentagon.addElement(id, freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new));
         } else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
             freshPentagon.addElement(id, new PentagonElement(
-                    new Interval(oldElement.getInterval().interval.getHigh().multiply(new MathNumber(-1)),
-                            oldElement.getInterval().interval.getLow().multiply(new MathNumber(-1))),
+                    new Interval(oldElement.getIntervalHigh().multiply(new MathNumber(-1)),
+                            oldElement.getIntervalLow().multiply(new MathNumber(-1))),
                     new HashSet<>()));
         } else if (expression instanceof BinaryExpression) {
             BinaryExpression binaryExpression = (BinaryExpression) expression;
@@ -184,10 +184,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
             // for full update this callback has to run twice
             freshPentagon.pentagons.forEach(((identifier, element) -> {
-                if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getInterval().interval.getLow()) < 0) {
+                if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
                     freshSub.add(identifier);
                     freshSub.addAll(element.getSub());
-                } else if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getLow().compareTo(element.getInterval().interval.getHigh()) > 0) {
+                } else if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getLow().compareTo(element.getIntervalHigh()) > 0) {
                     element.getSub().add(id);
                     element.getSub().addAll(freshSub);
                 }
@@ -278,8 +278,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update left interval as described in the javadoc
         try {
             leftInterval = new Interval(
-                    left.getInterval().interval.getLow(),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh()));
+                    left.getIntervalLow(),
+                    left.getIntervalHigh().min(right.getIntervalHigh()));
         } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
         }
@@ -287,8 +287,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update right interval as described in the javadoc
         try {
             rightInterval = new Interval(
-                    right.getInterval().interval.getLow().max(left.getInterval().interval.getLow()),
-                    right.getInterval().interval.getHigh());
+                    right.getIntervalLow().max(left.getIntervalLow()),
+                    right.getIntervalHigh());
         } catch (IllegalArgumentException exception) {
             rightInterval = Interval.BOTTOM;
         }
@@ -327,8 +327,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update left interval as described in the javadoc
         try {
             leftInterval = new Interval(
-                    left.getInterval().interval.getLow(),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh().add(new MathNumber(-1))));
+                    left.getIntervalLow(),
+                    left.getIntervalHigh().min(right.getIntervalHigh().add(new MathNumber(-1))));
         } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
         }
@@ -336,8 +336,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update right interval as described in the javadoc
         try {
             rightInterval = new Interval(
-                    right.getInterval().interval.getLow().max(left.getInterval().interval.getLow().add(new MathNumber(1))),
-                    right.getInterval().interval.getHigh());
+                    right.getIntervalLow().max(left.getIntervalLow().add(new MathNumber(1))),
+                    right.getIntervalHigh());
         } catch (IllegalArgumentException exception) {
             rightInterval = Interval.BOTTOM;
         }
@@ -373,8 +373,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update left interval as described in the javadoc
         try {
             leftInterval = new Interval(
-                    left.getInterval().interval.getLow().max(right.getInterval().interval.getLow()),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh())
+                    left.getIntervalLow().max(right.getIntervalLow()),
+                    left.getIntervalHigh().min(right.getIntervalHigh())
             );
         } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
@@ -383,8 +383,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // update right interval as described in the javadoc
         try {
             rightInterval = new Interval(
-                    left.getInterval().interval.getLow().max(right.getInterval().interval.getLow()),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh())
+                    left.getIntervalLow().max(right.getIntervalLow()),
+                    left.getIntervalHigh().min(right.getIntervalHigh())
             );
         } catch (IllegalArgumentException exception) {
             rightInterval = Interval.BOTTOM;
@@ -499,12 +499,12 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     public Satisfiability satisfiesLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
         if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
-                left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getLow()) < 0 ){
+                left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0 ){
             return Satisfiability.SATISFIED;
         }
 
         if ( leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
-                right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getLow()) < 0 ){
+                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0 ){
             return Satisfiability.NOT_SATISFIED;
         }
 
@@ -514,8 +514,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public Satisfiability satisfiesEQ(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
         if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
                 leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
-                left.getInterval().interval.getHigh().compareTo(right.getInterval().interval.getLow()) < 0 ||
-                right.getInterval().interval.getHigh().compareTo(left.getInterval().interval.getLow()) < 0 ){
+                left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0 ||
+                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0 ){
             return Satisfiability.NOT_SATISFIED;
         }
 
@@ -559,7 +559,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         PentagonDomain newDomain = new PentagonDomain();
         pentagons.forEach((identifier, pentagonElement) ->
                 newDomain.pentagons.put(identifier, new PentagonElement(
-                        pentagonElement.getInterval().isBottom() ? Interval.BOTTOM : new Interval(pentagonElement.getInterval().interval.getLow(), pentagonElement.getInterval().interval.getHigh()),
+                        pentagonElement.getInterval().isBottom() ? Interval.BOTTOM : new Interval(pentagonElement.getIntervalLow(), pentagonElement.getIntervalHigh()),
                         new HashSet<>(pentagonElement.getSub())
                         )
                 )

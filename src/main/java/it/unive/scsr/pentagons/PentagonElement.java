@@ -6,6 +6,7 @@ import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.representation.SetRepresentation;
 import it.unive.lisa.analysis.representation.StringRepresentation;
 import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.util.numeric.MathNumber;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.HashSet;
@@ -14,8 +15,9 @@ import java.util.stream.Collectors;
 
 public class PentagonElement {
     public static PentagonElement TOP = new PentagonElement(Interval.TOP, new HashSet<>());
-    private Interval interval;
-    private Set<Identifier> sub;
+    public static PentagonElement BOTTOM = new PentagonElement(Interval.BOTTOM, new HashSet<>());
+    private final Interval interval;
+    private final Set<Identifier> sub;
 
     public Interval getInterval() {
         return interval;
@@ -34,6 +36,15 @@ public class PentagonElement {
         throw new NotImplementedException();
         // return false;
     }
+
+    public MathNumber getIntervalLow(){
+        return interval.interval.getLow();
+    }
+
+    public MathNumber getIntervalHigh(){
+        return interval.interval.getHigh();
+    }
+
 
     public DomainRepresentation representation(){
         return new StringRepresentation("Intv: " + intervalString() + ", Sub: " +  subString());
