@@ -484,27 +484,30 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
             if (exp.getOperator() instanceof ComparisonLt){
                 return satisfiesLT(left, right, leftIdentifier, rightIdentifier);
-            }
-            if (exp.getOperator() instanceof ComparisonGt){
+            } else if (exp.getOperator() instanceof ComparisonGt){
                 return satisfiesLT(right, left, rightIdentifier, leftIdentifier);
-            }
-            if (exp.getOperator() instanceof ComparisonEq){
+            } else if (exp.getOperator() instanceof ComparisonEq){
                 return satisfiesEQ(left, right, leftIdentifier, rightIdentifier);
+            } else if (exp.getOperator() instanceof ComparisonLe){
+                return satisfiesLE(left, right, leftIdentifier, rightIdentifier);
+            } else if (exp.getOperator() instanceof ComparisonGe){
+                return satisfiesLE(right, left, rightIdentifier, leftIdentifier);
+            } else if (exp.getOperator() instanceof ComparisonNe){
+                return satisfiesNE(left, right, leftIdentifier, rightIdentifier);
             }
         }
-
 
         return Satisfiability.UNKNOWN;
     }
 
     public Satisfiability satisfiesLT(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
-        if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
-                left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0 ){
+        if (rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+                left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0){
             return Satisfiability.SATISFIED;
         }
 
-        if ( leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
-                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0 ){
+        if (leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
+                right.getIntervalHigh().compareTo(left.getIntervalLow()) <= 0){
             return Satisfiability.NOT_SATISFIED;
         }
 
@@ -512,11 +515,35 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     }
 
     public Satisfiability satisfiesEQ(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
-        if ( rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+        if (rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
                 leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
                 left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0 ||
-                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0 ){
+                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0){
             return Satisfiability.NOT_SATISFIED;
+        }
+
+        return Satisfiability.UNKNOWN;
+    }
+
+    public Satisfiability satisfiesLE(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+        if (rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+                left.getIntervalHigh().compareTo(right.getIntervalLow()) <= 0) {
+            return Satisfiability.SATISFIED;
+        }
+
+        if (right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0) {
+            return Satisfiability.NOT_SATISFIED;
+        }
+
+        return Satisfiability.UNKNOWN;
+    }
+
+    public Satisfiability satisfiesNE(PentagonElement left, PentagonElement right, Optional<Identifier> leftIdentifier, Optional<Identifier> rightIdentifier){
+        if (rightIdentifier.isPresent() && left.getSub().contains(rightIdentifier.get()) ||
+                leftIdentifier.isPresent() && right.getSub().contains(leftIdentifier.get()) ||
+                left.getIntervalHigh().compareTo(right.getIntervalLow()) < 0 ||
+                right.getIntervalHigh().compareTo(left.getIntervalLow()) < 0) {
+            return Satisfiability.SATISFIED;
         }
 
         return Satisfiability.UNKNOWN;
