@@ -108,7 +108,9 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         Set<Identifier> thisSub = this.pentagons.get(id).getSub();
         Set<Identifier> otherSub = other.pentagons.get(id).getSub();
 
-        return thisSub.stream().filter(otherSub::contains).collect(Collectors.toSet());
+        Set<Identifier> out = new HashSet<>(thisSub);
+        out.retainAll(otherSub);
+        return out;
     }
 
     @Override
@@ -163,7 +165,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
         if (expression instanceof Constant && (expression.getStaticType().isNumericType() &&
                 expression.getStaticType().asNumericType().isIntegral()) ) {
-            freshPentagon.addElement(id, retrievePentagonElement(expression).orElseThrow(SemanticException::new));
+            freshPentagon.addElement(id, freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new));
         } else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
             freshPentagon.addElement(id, new PentagonElement(
                     new Interval(oldElement.getInterval().interval.getHigh().multiply(new MathNumber(-1)),
@@ -171,8 +173,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     new HashSet<>()));
         } else if (expression instanceof BinaryExpression) {
             BinaryExpression binaryExpression = (BinaryExpression) expression;
-            PentagonElement left = retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
-            PentagonElement right = retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
+            PentagonElement left = freshPentagon.retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
+            PentagonElement right = freshPentagon.retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
 
             Interval freshInterval = left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
                             left.getInterval(), right.getInterval(),
@@ -192,6 +194,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
             freshPentagon.addElement(id, new PentagonElement(freshInterval, freshSub));
         }
+
+        System.out.println("Assign: " + freshPentagon.pentagons);
         return freshPentagon;
     }
 
@@ -242,6 +246,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         // leftIdentifier.ifPresent(this::removeElement);
         // rightIdentifier.ifPresent(this::removeElement);
 
+        System.out.print("(Negated) ");
+
         if (expression.getOperator() instanceof ComparisonLt){ // !(left < right) -> left >= right -> right <= left
             return compareLE(right, left, rightIdentifier, leftIdentifier);
         }
@@ -257,6 +263,11 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         if (expression.getOperator() instanceof ComparisonNe){ // !(left >= right) -> left < right
             return compareEQ(left, right, leftIdentifier, rightIdentifier);
         }
+        if (expression.getOperator() instanceof ComparisonEq){
+            return this;
+        }
+
+        System.out.println("WHAT!!");
 
         return this.copy();
     }
@@ -267,7 +278,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         try {
             leftInterval = new Interval(
                     left.getInterval().interval.getLow(),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getLow()));
+                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh()));
         } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
         }
@@ -301,6 +312,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
         rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalRightInterval, right.getSub())));
 
+        System.out.println("CompareLE " + this.pentagons);
         return this;
     }
 
@@ -315,7 +327,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         try {
             leftInterval = new Interval(
                     left.getInterval().interval.getLow(),
-                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getLow().add(new MathNumber(-1))));
+                    left.getInterval().interval.getHigh().min(right.getInterval().interval.getHigh().add(new MathNumber(-1))));
         } catch (IllegalArgumentException exception){
             leftInterval = Interval.BOTTOM;
         }
@@ -349,6 +361,8 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         Interval finalRightInterval = rightInterval;
         leftIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalLeftInterval, left.getSub())));
         rightIdentifier.ifPresent(id -> pentagons.put(id, new PentagonElement(finalRightInterval, right.getSub())));
+
+        System.out.println("CompareLT: " + this.pentagons);
 
         return this;
     }
@@ -405,10 +419,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
         PentagonDomain freshPentagon = this.copy();
 
-
+        // TODO: comparison sub-methods need to be void
         if(expression instanceof UnaryExpression){
             UnaryExpression unaryExpression = (UnaryExpression) expression;
-            System.out.println(unaryExpression);
+            System.out.println("Assume: " + unaryExpression);
 
             if (unaryExpression.getOperator() instanceof LogicalNegation){
                 return freshPentagon.negateLogicalBinaryExpression((BinaryExpression) unaryExpression.getExpression());
@@ -418,9 +432,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         }
         if(expression instanceof BinaryExpression){
             BinaryExpression exp = (BinaryExpression) expression;
+            System.out.println("Assume: " + exp);
 
-            PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
-            PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
+            PentagonElement left = freshPentagon.retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
+            PentagonElement right = freshPentagon.retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
             Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
             Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
 
@@ -485,9 +500,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (!(obj instanceof PentagonDomain)) return false;
-        System.out.println(this.pentagons);
-        System.out.println(((PentagonDomain) obj).pentagons);
-        System.out.println(this.type == ((PentagonDomain) obj).type && this.pentagons.equals(((PentagonDomain) obj).pentagons));
         return this.type == ((PentagonDomain) obj).type && this.pentagons.equals(((PentagonDomain) obj).pentagons);
     }
 
@@ -500,7 +512,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         pentagons.forEach((identifier, pentagonElement) ->
                 newDomain.pentagons.put(identifier, new PentagonElement(
                         pentagonElement.getInterval().isBottom() ? Interval.BOTTOM : new Interval(pentagonElement.getInterval().interval.getLow(), pentagonElement.getInterval().interval.getHigh()),
-                        new HashSet<>(pentagonElement.getSub()))));
+                        new HashSet<>(pentagonElement.getSub())
+                        )
+                )
+        );
         return newDomain;
     }
 }
