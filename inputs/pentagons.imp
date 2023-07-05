@@ -12,18 +12,21 @@ class tutorial {
         def a = 10;
         def c = 1;
         def b = 0;
-           while (b < a)
+        while (b < a)
             b = b + c;
-           return b;
+        return b;
     }
 
     basic() {
         def i = 2;
         def j = -10;
+        def k = -j;
         def a = i + j;
         def s = i - j;
         def m = i * j;
         def d = i / j;
+        def brk = 420;
+        def c = a;
     }
 
     branches1(a, b) {
@@ -94,7 +97,55 @@ class tutorial {
         }
 
         return;
+    }
 
+    comparisons_variable_constant(x){
+        def a = 0;
+        if (0 < x) {
+            a = 20;
+        } else {
+            def c = 50;
+        }
+
+        def breakpoint = 420;
+
+        if (a < 100){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a > 10){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a == 10){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a != 50){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a <= 20){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        if (a >= 50){
+            def c = 100;
+        } else {
+            def c = 0;
+        }
+
+        return;
     }
 
     satisfiability_non_empty_intersection(x){
@@ -202,6 +253,5 @@ class tutorial {
         return;
 
     }
-
 
 }

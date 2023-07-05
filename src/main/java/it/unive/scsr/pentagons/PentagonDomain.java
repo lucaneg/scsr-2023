@@ -37,7 +37,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public static final PentagonDomain BOTTOM = new PentagonDomain(PentagonType.BOTTOM);
     public static final PentagonDomain TOP = new PentagonDomain(PentagonType.TOP);
 
-    private static final Integer WIDENING_LIMIT = 50;
+    private static final Integer WIDENING_LIMIT = 1000;
 
     private final PentagonType type;
     private final Map<Identifier, PentagonElement> pentagons;
@@ -119,7 +119,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return isIntervalLessOrEqual(getBoxDomain(this), getBoxDomain(that)) &&
                 isSubLessOrEqual(getBoxDomain(this), getSubDomain(this), getSubDomain(that));
     }
-    
+
     private Map<Identifier, Interval> getBoxDomain(PentagonDomain p){
         return p.pentagons.keySet().stream()
                 .map(id -> new Pair<>(id, p.pentagons.get(id).getInterval()))
@@ -162,39 +162,53 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
         PentagonDomain freshPentagon = this.copy();
-        PentagonElement oldElement = freshPentagon.removeElement(id);
+        freshPentagon.removeElement(id);
 
-        if (expression instanceof Constant && (expression.getStaticType().isNumericType() &&
-                expression.getStaticType().asNumericType().isIntegral()) ) {
-            freshPentagon.addElement(id, freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new));
-        } else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
-            freshPentagon.addElement(id, new PentagonElement(
-                    new Interval(oldElement.getIntervalHigh().multiply(new MathNumber(-1)),
-                            oldElement.getIntervalLow().multiply(new MathNumber(-1))),
-                    new HashSet<>()));
-        } else if (expression instanceof BinaryExpression) {
+        Set<Identifier> freshSub = new HashSet<>();
+        Optional<Interval> freshInterval = Optional.empty();
+
+        if (expression instanceof Constant && (expression.getStaticType().isNumericType() && expression.getStaticType().asNumericType().isIntegral()) ||
+                expression instanceof Identifier) {
+            PentagonElement right = freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new);
+            freshInterval = Optional.of(right.getInterval());
+            freshSub = right.getSub();
+        }
+        else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
+            PentagonElement beforeNegation = freshPentagon.retrievePentagonElement(((UnaryExpression) expression).getExpression()).orElseThrow(SemanticException::new);
+            freshInterval = Optional.of(new Interval(
+                    beforeNegation.getIntervalHigh().multiply(new MathNumber(-1)),
+                    beforeNegation.getIntervalLow().multiply(new MathNumber(-1))
+            ));
+        }
+        else if (expression instanceof BinaryExpression) {
             BinaryExpression binaryExpression = (BinaryExpression) expression;
             PentagonElement left = freshPentagon.retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
             PentagonElement right = freshPentagon.retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
 
-            Interval freshInterval = left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
-                            left.getInterval(), right.getInterval(),
-                            pp);
-            Set<Identifier> freshSub = new HashSet<>();
+            freshInterval = Optional.of(
+                    left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(
+                            ((BinaryExpression) expression).getOperator(), left.getInterval(), right.getInterval(), pp
+                    )
+            );
 
-            // for full update this callback has to run twice
+        }
+        if (freshInterval.isPresent()){
+            Set<Identifier> finalFreshSub = freshSub;
+            Interval finalFreshInterval = freshInterval.get();
+
             freshPentagon.pentagons.forEach(((identifier, element) -> {
-                if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
-                    freshSub.add(identifier);
-                    freshSub.addAll(element.getSub());
-                } else if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getLow().compareTo(element.getIntervalHigh()) > 0) {
+                if (!finalFreshInterval.isBottom() && !element.getInterval().isBottom() && finalFreshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
+                    finalFreshSub.add(identifier);
+                    finalFreshSub.addAll(element.getSub());
+                } else if (!finalFreshInterval.isBottom() && !element.getInterval().isBottom() && finalFreshInterval.interval.getLow().compareTo(element.getIntervalHigh()) > 0) {
                     element.getSub().add(id);
-                    element.getSub().addAll(freshSub);
+                    element.getSub().addAll(finalFreshSub);
                 }
             }));
 
-            freshPentagon.addElement(id, new PentagonElement(freshInterval, freshSub));
+            freshPentagon.addElement(id, new PentagonElement(freshInterval.get(), freshSub));
         }
+
 
         System.out.println("Assign: " + freshPentagon.pentagons);
         return freshPentagon;
