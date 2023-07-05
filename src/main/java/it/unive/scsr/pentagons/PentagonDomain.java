@@ -153,20 +153,15 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         PentagonDomain freshPentagon = this.copy();
         freshPentagon.removeElement(id);
 
-        Set<Identifier> freshSub = new HashSet<>();
-        Optional<Interval> freshInterval = Optional.empty();
-
         if (expression instanceof Constant && (expression.getStaticType().isNumericType() && expression.getStaticType().asNumericType().isIntegral()) ||
                 expression instanceof Identifier) {
-            PentagonElement right = freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new);
-            freshInterval = Optional.of(right.getInterval());
-            freshSub = right.getSub();
+            freshPentagon.addElement(id, freshPentagon.retrievePentagonElement(expression).orElseThrow(SemanticException::new));
         }
         else if (expression instanceof UnaryExpression && ((UnaryExpression) expression).getOperator() instanceof NumericNegation) {
             PentagonElement beforeNegation = freshPentagon.retrievePentagonElement(((UnaryExpression) expression).getExpression()).orElseThrow(SemanticException::new);
-            freshInterval = Optional.of(new Interval(
-                    beforeNegation.getIntervalHigh().multiply(new MathNumber(-1)),
-                    beforeNegation.getIntervalLow().multiply(new MathNumber(-1))
+            freshPentagon.addElement(id, new PentagonElement(
+                    new Interval(beforeNegation.getIntervalHigh().multiply(new MathNumber(-1)), beforeNegation.getIntervalLow().multiply(new MathNumber(-1))),
+                    new HashSet<>()
             ));
         }
         else if (expression instanceof BinaryExpression) {
@@ -174,28 +169,24 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             PentagonElement left = freshPentagon.retrievePentagonElement(binaryExpression.getLeft()).orElseThrow(SemanticException::new);
             PentagonElement right = freshPentagon.retrievePentagonElement(binaryExpression.getRight()).orElseThrow(SemanticException::new);
 
-            freshInterval = Optional.of(
-                    left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(
-                            ((BinaryExpression) expression).getOperator(), left.getInterval(), right.getInterval(), pp
-                    )
-            );
+            Interval freshInterval = left.getInterval().isBottom() ? Interval.BOTTOM : left.getInterval().evalBinaryExpression(((BinaryExpression) expression).getOperator(),
+                    left.getInterval(), right.getInterval(),
+                    pp);
+            Set<Identifier> freshSub = new HashSet<>();
 
-        }
-        if (freshInterval.isPresent()){
-            Set<Identifier> finalFreshSub = freshSub;
-            Interval finalFreshInterval = freshInterval.get();
-
+            // for full update this callback has to run twice
             freshPentagon.pentagons.forEach(((identifier, element) -> {
-                if (!finalFreshInterval.isBottom() && !element.getInterval().isBottom() && finalFreshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
-                    finalFreshSub.add(identifier);
-                    finalFreshSub.addAll(element.getSub());
-                } else if (!finalFreshInterval.isBottom() && !element.getInterval().isBottom() && finalFreshInterval.interval.getLow().compareTo(element.getIntervalHigh()) > 0) {
+                if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
+                    freshSub.add(identifier);
+                    freshSub.addAll(element.getSub());
+                } else if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getLow().compareTo(element.getIntervalHigh()) > 0) {
                     element.getSub().add(id);
-                    element.getSub().addAll(finalFreshSub);
+                    element.getSub().addAll(freshSub);
                 }
             }));
 
-            freshPentagon.addElement(id, new PentagonElement(freshInterval.get(), freshSub));
+            freshPentagon.addElement(id, new PentagonElement(freshInterval, freshSub));
+
         }
 
         return freshPentagon;
@@ -247,8 +238,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
         // leftIdentifier.ifPresent(this::removeElement);
         // rightIdentifier.ifPresent(this::removeElement);
-
-        System.out.print("(Negated) ");
 
         if (expression.getOperator() instanceof ComparisonLt){ // !(left < right) -> left >= right -> right <= left
             return compareLE(right, left, rightIdentifier, leftIdentifier);
