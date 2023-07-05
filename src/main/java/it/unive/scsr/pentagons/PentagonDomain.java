@@ -466,27 +466,26 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public Satisfiability satisfies(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        if (expression instanceof BinaryExpression) {
-            BinaryExpression exp = (BinaryExpression) expression;
+        if (!(expression instanceof BinaryExpression)) return Satisfiability.UNKNOWN;
+        BinaryExpression exp = (BinaryExpression) expression;
 
-            PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
-            PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
-            Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
-            Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
+        PentagonElement left = retrievePentagonElement(exp.getLeft()).orElseGet(() -> PentagonElement.TOP);
+        PentagonElement right = retrievePentagonElement(exp.getRight()).orElseGet(() -> PentagonElement.TOP);
+        Optional<Identifier> leftIdentifier = exp.getLeft() instanceof Identifier ? Optional.of((Identifier) exp.getLeft()) : Optional.empty();
+        Optional<Identifier> rightIdentifier = exp.getRight() instanceof Identifier ? Optional.of((Identifier) exp.getRight()) : Optional.empty();
 
-            if (exp.getOperator() instanceof ComparisonLt){
-                return satisfiesLT(left, right, leftIdentifier, rightIdentifier);
-            } else if (exp.getOperator() instanceof ComparisonGt){
-                return satisfiesLT(right, left, rightIdentifier, leftIdentifier);
-            } else if (exp.getOperator() instanceof ComparisonEq){
-                return satisfiesEQ(left, right, leftIdentifier, rightIdentifier);
-            } else if (exp.getOperator() instanceof ComparisonLe){
-                return satisfiesLE(left, right, leftIdentifier, rightIdentifier);
-            } else if (exp.getOperator() instanceof ComparisonGe){
-                return satisfiesLE(right, left, rightIdentifier, leftIdentifier);
-            } else if (exp.getOperator() instanceof ComparisonNe){
-                return satisfiesNE(left, right, leftIdentifier, rightIdentifier);
-            }
+        if (exp.getOperator() instanceof ComparisonLt){
+            return satisfiesLT(left, right, leftIdentifier, rightIdentifier);
+        } else if (exp.getOperator() instanceof ComparisonGt){
+            return satisfiesLT(right, left, rightIdentifier, leftIdentifier);
+        } else if (exp.getOperator() instanceof ComparisonEq){
+            return satisfiesEQ(left, right, leftIdentifier, rightIdentifier);
+        } else if (exp.getOperator() instanceof ComparisonLe){
+            return satisfiesLE(left, right, leftIdentifier, rightIdentifier);
+        } else if (exp.getOperator() instanceof ComparisonGe){
+            return satisfiesLE(right, left, rightIdentifier, leftIdentifier);
+        } else if (exp.getOperator() instanceof ComparisonNe) {
+            return satisfiesNE(left, right, leftIdentifier, rightIdentifier);
         }
 
         return Satisfiability.UNKNOWN;
