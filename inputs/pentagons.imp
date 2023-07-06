@@ -1,0 +1,60 @@
+class ExtendedSign {
+    calculateF0() {
+        def initialValue = 0;
+        def height = 5;
+        def total = 8;
+        def j = initialValue;
+        while (initialValue < 10)
+            initialValue = initialValue + 1;
+        return initialValue;
+    }
+
+    calculateF1() {
+        def negativeValue = -1;
+        def counter = 0;
+        while (counter < 10) {
+            counter = counter + 1;
+            negativeValue = negativeValue - 1;
+        }
+        return counter;
+    }
+
+    calculateF2() {
+        def valueX = 0;
+        def valueY = 0;
+        if (1 == 2) {
+            valueX = valueX * -1;
+            valueY = valueY + 1;
+        } else {
+            valueX = valueX * -2;
+            valueY = valueY + 2;
+        }
+        return;
+    }
+
+    calculateF3() {
+        def numberX = 100;
+        while (numberX != 0) {
+            if (numberX % 3 == 0) {
+                numberX = numberX / 3;
+            } else {
+                numberX = -numberX / -2;
+            }
+        }
+        def valueY = numberX * -numberX;
+        return;
+    }
+
+    calculateF4() {
+        def initialValue = 0;
+        while (true) {
+            if (initialValue == 0) {
+                initialValue = initialValue + 1;
+            } else {
+                initialValue = initialValue / -2;
+            }
+        }
+        def valueY = initialValue * 5;
+        return;
+    }
+}

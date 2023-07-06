@@ -1,0 +1,9 @@
+class BranchCalculator {
+    calculateBranches(number1, number2) {
+        if (number1 < number2)
+            number1 = number1 + 7;
+        else
+            number1 = -7;
+        number2 = number1 + 2;
+    }
+}
