@@ -1,0 +1,132 @@
+class tutorial {
+
+	/*loop() {
+		def c = 1;
+		def b = 100;
+   		while (b > c)
+        	b = b - 1;
+   		return b;
+    }
+
+	basic() {
+		def i = 2;
+		def j = -10;
+		def a = i + j;
+		def s = i - j;
+		def m = i * j;
+		def d = i / j;
+		def h = j - 5;
+		h = j - 10000;
+	}
+
+	branches(a, b) {
+		def x = 0;
+		if (a > b)
+           	x = x * 7;
+       	else
+           	x = 7;
+
+        if (a >= b)
+            x = x * 10;
+        else
+            x = 10;
+		def y = x / x;
+    }
+
+    binarysearch(array, arr_len, value){
+        def num = 0;
+        def num2 = arr_len - 1;
+        def t = num;
+        def result=-1;
+        while(num <= num2)
+            def index = (num + num2) / 2;
+            def num4 = array[index];
+            if(value == num4)
+                result = index;
+            if(num4 < value)
+                num = index + 1;
+            else
+                num2 = index - 1;
+        if(result=-1)
+            result = num;
+        return num;
+    }
+
+    test(y){
+        def x = 3;
+        def p = 8;
+        if (y < p){
+            if(x <= y){
+                y = y - 1;
+            }
+        }else{
+            y = 1;
+        }
+        p = 0;
+    }
+
+    simple(y){
+        def x = 5;
+        y = x + 0;
+        def z = y - 2;
+        def array = new int[100];
+        def t = array[x];
+        return y;
+    }*/
+
+    test2(){
+        def a = 1;
+        def b = 2;
+        def x = 0;
+        def y = 0;
+        if(a < b){
+            x=0;
+            y=3;
+        }else{
+            x=-2;
+            y=1;
+        }
+        return a;
+    }
+
+    demo1(){
+        def a = 8;
+        def b = 2;
+        def x = b - a;
+        def y = a - 3;
+        return x;
+    }
+
+    demo2(){
+        def a = 1;
+        def b = 2;
+        def x = 0;
+        def y = 0;
+        if(a < b){
+            x=0;
+            y=3;
+        }else{
+            x=-2;
+            y=1;
+        }
+        return a;
+    }
+
+    demo3(){
+        def x = 20;
+        def ok = 0;
+        while(x > 0){
+            x = x - 1;
+        }
+        if(x < 0){
+            if(x > -50){
+                ok = 1;
+            }else{
+                ok = 0;
+            }
+        }else{
+            ok = -1;
+        }
+        return -1;
+    }
+}
