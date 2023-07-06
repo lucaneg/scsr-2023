@@ -174,7 +174,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     pp);
             Set<Identifier> freshSub = new HashSet<>();
 
-            // for full update this callback has to run twice
             freshPentagon.pentagons.forEach(((identifier, element) -> {
                 if (!freshInterval.isBottom() && !element.getInterval().isBottom() && freshInterval.interval.getHigh().compareTo(element.getIntervalLow()) < 0) {
                     freshSub.add(identifier);
@@ -208,12 +207,13 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     /**
      * Removes the identifier from the pentagon
+     *
      * @param id identifier to remove
      */
-    private PentagonElement removeElement(Identifier id) {
+    private void removeElement(Identifier id) {
         this.pentagons.values().
                 forEach(pentagonElement -> pentagonElement.getSub().removeIf(identifier -> identifier.equals(id)));
-        return this.pentagons.remove(id);
+        this.pentagons.remove(id);
     }
 
     /**
@@ -235,9 +235,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         PentagonElement right = retrievePentagonElement(expression.getRight()).orElseGet(() -> PentagonElement.TOP);
         Optional<Identifier> leftIdentifier = expression.getLeft() instanceof Identifier ? Optional.of((Identifier) expression.getLeft()) : Optional.empty();
         Optional<Identifier> rightIdentifier = expression.getRight() instanceof Identifier ? Optional.of((Identifier) expression.getRight()) : Optional.empty();
-
-        // leftIdentifier.ifPresent(this::removeElement);
-        // rightIdentifier.ifPresent(this::removeElement);
+        
 
         if (expression.getOperator() instanceof ComparisonLt){ // !(left < right) -> left >= right -> right <= left
             return compareLE(right, left, rightIdentifier, leftIdentifier);
@@ -405,7 +403,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
         PentagonDomain freshPentagon = this.copy();
 
-        // TODO: comparison sub-methods need to be void
         if(expression instanceof UnaryExpression){
             UnaryExpression unaryExpression = (UnaryExpression) expression;
 
