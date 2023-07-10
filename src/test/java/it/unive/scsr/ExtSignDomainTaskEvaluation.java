@@ -38,7 +38,7 @@ public class ExtSignDomainTaskEvaluation {
 		conf.workdir = "outputs/ext-sign";
 		conf.abstractState = new SimpleAbstractState<>(
 				new MonolithicHeap(),
-				new ValueEnvironment<>(new ExtSignDomain()),
+				new ValueEnvironment<>(new ExtSignDomainSolution()),
 				new TypeEnvironment<>(new InferredTypes()));
 
 		LiSA lisa = new LiSA(conf);
