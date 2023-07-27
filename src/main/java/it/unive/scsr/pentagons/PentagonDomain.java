@@ -69,7 +69,12 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public boolean lessOrEqual(PentagonDomain other) throws SemanticException {
-        return false;
+        return interval.lessOrEqual(other.interval) && this.subLessOrEqual(other);
+    }
+
+    private boolean subLessOrEqual(PentagonDomain other) {
+        return other.sub.keySet().stream().allMatch( var2 -> other.sub.get(var2).stream().allMatch( id2 -> this.sub.get(var2).contains(id2) ||
+                this.interval.getState(var2).interval.getHigh().compareTo(this.interval.getState(id2).interval.getLow()) < 0));
     }
 
     @Override
@@ -79,7 +84,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain bottom() {
-        return new PentagonDomain(interval.top(), new HashMap<>());
+        return new PentagonDomain(interval.bottom(), new HashMap<>());
     }
 
     @Override
