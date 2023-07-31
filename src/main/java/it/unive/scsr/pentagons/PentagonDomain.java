@@ -1,13 +1,17 @@
 package it.unive.scsr.pentagons;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import it.unive.lisa.analysis.ScopeToken;
 import it.unive.lisa.analysis.SemanticException;
 import it.unive.lisa.analysis.nonrelational.value.ValueEnvironment;
 import it.unive.lisa.analysis.numeric.Interval;
+import it.unive.lisa.analysis.numeric.Sign;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.value.Constant;
 import it.unive.lisa.symbolic.value.Identifier;
+import it.unive.lisa.symbolic.value.TernaryExpression;
 import it.unive.lisa.symbolic.value.ValueExpression;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -32,6 +36,20 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         this.sub = sub;
     }
 
+    private PentagonDomain recomputePentagon() {
+        Map<Identifier, Set<Identifier>> newSub = new HashMap<>();
+        interval.getKeys().forEach(id1 -> {
+            Set<Identifier> aux = new HashSet<>();
+            interval.getKeys().forEach(id2 -> {
+                if (!id1.equals(id2) && interval.getState(id1).interval.getHigh().compareTo(interval.getState(id2).interval.getLow()) < 0) {
+                    aux.add(id2);
+                }
+            });
+            newSub.put(id1, aux);
+        });
+
+        return new PentagonDomain(this.interval, newSub);
+    }
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
         ValueEnvironment<Interval> lubInterval = this.interval.lub(other.interval);
@@ -89,7 +107,19 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        ValueEnvironment<Interval> newInterval = interval.assign(id, expression, pp);
+        Map<Identifier, Set<Identifier>> newSub = sub;
+
+        if (pp instanceof Constant) {
+            newSub.put(id, new HashSet<>());
+        } else if (expression instanceof Identifier) {
+            sub.get((Identifier) expression).remove(id);
+            sub.put(id, sub.get( (Identifier) expression));
+        } else if (expression instanceof TernaryExpression) {
+            throw new NotImplementedException();
+        }
+
+        return new PentagonDomain(newInterval, newSub).recomputePentagon();
     }
 
     @Override
