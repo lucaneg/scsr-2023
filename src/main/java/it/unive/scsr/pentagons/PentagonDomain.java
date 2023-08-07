@@ -7,10 +7,12 @@ import it.unive.lisa.analysis.numeric.Interval;
 import it.unive.lisa.analysis.representation.DomainRepresentation;
 import it.unive.lisa.analysis.value.ValueDomain;
 import it.unive.lisa.program.cfg.ProgramPoint;
+import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
+import it.unive.lisa.symbolic.value.operator.AdditionOperator;
+import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
 import it.unive.lisa.symbolic.value.operator.binary.*;
 import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
-import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,15 +61,17 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         variables.forEach(var -> {
             Set<Identifier> aux = new HashSet<>();
             if (!this.sub.containsKey(var)) {
-                this.sub.get(var).forEach( id -> {
-                    if (this.interval.getState(var).interval.getHigh().compareTo(this.interval.getState(id).interval.getLow()) < 0) {
+                other.sub.get(var).forEach( id -> {
+                    if (this.interval.getState(var).interval != null && this.interval.getState(id).interval != null &&
+                            this.interval.getState(var).interval.getHigh().compareTo(this.interval.getState(id).interval.getLow()) < 0) {
                         aux.add(id);
                     }
                 });
                 lubSub.put(var, aux);
             } else if (!other.sub.containsKey(var)) {
-                other.sub.get(var).forEach( id -> {
-                    if (other.interval.getState(var).interval.getHigh().compareTo(other.interval.getState(id).interval.getLow()) < 0) {
+                this.sub.get(var).forEach( id -> {
+                    if (other.interval.getState(var).interval != null && other.interval.getState(id).interval != null &&
+                            other.interval.getState(var).interval.getHigh().compareTo(other.interval.getState(id).interval.getLow()) < 0) {
                         aux.add(id);
                     }
                 });
@@ -110,12 +114,45 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         if (pp instanceof Constant) {
             newSub.put(id, new HashSet<>());
         } else if (expression instanceof Identifier) {
-            sub.get((Identifier) expression).remove(id);
-            sub.put(id, sub.get( (Identifier) expression));
+            newSub.get((Identifier) expression).remove(id);
+            newSub.put(id, sub.get( (Identifier) expression));
         } else if (expression instanceof BinaryExpression) {
-            throw new NotImplementedException();
+            BinaryExpression binaryExpression = (BinaryExpression) expression;
+            SymbolicExpression left = binaryExpression.getLeft();
+            SymbolicExpression right = binaryExpression.getRight();
+            BinaryOperator binaryOperator = binaryExpression.getOperator();
+            if (left instanceof Identifier && right instanceof Constant) {
+                Identifier leftId = (Identifier) left;
+                Constant rightConst = (Constant) right;
+                if (binaryOperator instanceof AdditionOperator) {
+                    if ((Integer) rightConst.getValue() > 0) {
+                        newSub.put(id, new HashSet<>());
+                        newSub.get(leftId).add(id);
+                    } else {
+                        newSub.get(leftId).remove(id);
+                        newSub.put(id, sub.get(leftId));
+                    }
+                } else if (binaryOperator instanceof SubtractionOperator) {
+                    if ((Integer) rightConst.getValue() < 0) {
+                        newSub.put(id, new HashSet<>());
+                        newSub.get(leftId).add(id);
+                    } else {
+                        newSub.get(leftId).remove(id);
+                        newSub.put(id, sub.get(leftId));
+                    }
+                } else {
+                    newSub.put(id, new HashSet<>());
+                }
+            } else if (left instanceof Identifier && right instanceof Identifier){
+                Identifier leftId = (Identifier) left;
+                Identifier rightId = (Identifier) right;
+                newSub.put(id, new HashSet<>());
+                newSub.get(leftId).remove(id);
+                newSub.get(rightId).remove(id);
+            }
+        } else {
+            newSub.put(id, new HashSet<>());
         }
-
         return new PentagonDomain(newInterval, newSub).recomputePentagon();
     }
 
@@ -191,9 +228,47 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         return this;
     }
 
+    private Satisfiability satisfiesSub(ValueExpression expression, ProgramPoint pp){
+        Satisfiability sat = Satisfiability.UNKNOWN;
+        if(expression instanceof UnaryExpression){
+            UnaryExpression unaryExpression = (UnaryExpression) expression;
+            if (unaryExpression.getOperator() instanceof LogicalNegation) {
+                expression = expression.removeNegations();
+            }
+        }
+
+        BinaryExpression exp = null;
+        Identifier left = null;
+        Identifier right = null;
+
+        if(expression instanceof BinaryExpression && ((BinaryExpression)expression).getLeft() instanceof Identifier && ((BinaryExpression)expression).getRight() instanceof Identifier) {
+            exp = (BinaryExpression) expression;
+            left = (Identifier) exp.getLeft();
+            right = (Identifier) exp.getRight();
+
+            if (exp.getOperator() instanceof ComparisonLt || exp.getOperator() instanceof ComparisonLe){ // x < y || x <= y
+                if (sub.get(left).contains(right)) {
+                    sat = Satisfiability.SATISFIED;
+                }
+            }
+            if (exp.getOperator() instanceof ComparisonGt || exp.getOperator() instanceof ComparisonGe){ //x > y || x >= y
+                if (sub.get(right).contains(left)) {
+                    sat = Satisfiability.SATISFIED;
+                }
+            }
+            if (exp.getOperator() instanceof ComparisonEq){ //x==y
+                if (sub.get(left).contains(right) || sub.get(right).contains(left)) {
+                    sat = Satisfiability.NOT_SATISFIED;
+                }
+            }
+
+        }
+
+        return sat;
+    }
     @Override
     public Satisfiability satisfies(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        return null;
+        return interval.satisfies(expression, pp).or(satisfiesSub(expression, pp));
     }
 
     @Override
