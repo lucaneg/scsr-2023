@@ -1,0 +1,13 @@
+class tutorial {
+
+    branches(a, b) {
+        def x = 0;
+        b = 0;
+        if (a < b)
+           x = x * 7;
+        else
+           x = -7;
+        def y = x / x;
+    }
+
+}
