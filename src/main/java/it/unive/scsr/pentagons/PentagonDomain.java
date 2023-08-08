@@ -38,7 +38,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
     }
 
     private PentagonDomain recomputePentagon() {
-        Map<Identifier, Set<Identifier>> newSub = new HashMap<>();
+        PentagonDomain newPentagon = this.copy();
         interval.getKeys().forEach(id1 -> {
             Set<Identifier> aux = new HashSet<>();
             interval.getKeys().forEach(id2 -> {
@@ -46,20 +46,15 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     aux.add(id2);
                 }
             });
-            newSub.put(id1, aux);
-        });
 
-        return new PentagonDomain(this.interval, newSub);
+            newPentagon.sub.computeIfAbsent(id1, k -> new HashSet<>()).addAll(aux);
+
+        });
+        return newPentagon;
     }
+
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
-        this.sub.keySet().forEach( id -> {
-            other.sub.computeIfAbsent(id, k -> new HashSet<>());
-        });
-
-        other.sub.keySet().forEach( id -> {
-            this.sub.computeIfAbsent(id, k -> new HashSet<>());
-        });
 
         ValueEnvironment<Interval> lubInterval = this.interval.lub(other.interval);
         Map<Identifier, Set<Identifier>> lubSub = new HashMap<>();
@@ -78,6 +73,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     }
                 });
                 lubSub.put(var, aux);
+                lubSub.get(var).addAll(other.sub.get(var));
             } else if (!other.sub.containsKey(var)) {
                 this.sub.get(var).forEach( id -> {
                     if (other.interval.getState(var).interval != null && other.interval.getState(id).interval != null &&
@@ -86,14 +82,14 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     }
                 });
                 lubSub.put(var, aux);
+                lubSub.get(var).addAll(this.sub.get(var));
             } else {
                 aux.addAll(this.sub.get(var));
                 aux.retainAll(other.sub.get(var));
                 lubSub.put(var, aux);
             }
         });
-
-        return new PentagonDomain(lubInterval, lubSub);
+        return new PentagonDomain(lubInterval, lubSub).recomputePentagon();
     }
 
     @Override
@@ -129,15 +125,24 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         ValueEnvironment<Interval> newInterval = interval.assign(id, expression, pp);
         Map<Identifier, Set<Identifier>> newSub = sub;
 
-        if (pp instanceof Constant) {
+        if (expression instanceof Constant) {
             newSub.put(id, new HashSet<>());
+            newSub.forEach((k,v) -> {
+                v.remove(id);
+            });
         } else if (expression instanceof Identifier) {
+            newSub.forEach((k,v) -> {
+                v.remove(id);
+            });
             if (newSub.get((Identifier) expression) != null)
                 newSub.get((Identifier) expression).remove(id);
             else
                 newSub.put((Identifier) expression, new HashSet<>());
-            newSub.put(id, sub.get( (Identifier) expression));
+            newSub.put(id, new HashSet<>(sub.get( (Identifier) expression)));
         } else if (expression instanceof BinaryExpression) {
+            newSub.forEach((k,v) -> {
+                v.remove(id);
+            });
             BinaryExpression binaryExpression = (BinaryExpression) expression;
             SymbolicExpression left = binaryExpression.getLeft();
             SymbolicExpression right = binaryExpression.getRight();
@@ -154,7 +159,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                             newSub.get(leftId).remove(id);
                         else
                             newSub.put(leftId, new HashSet<>());
-                        newSub.put(id, sub.get(leftId));
+                        if ((Integer) rightConst.getValue() < 0) {
+                            newSub.get(id).add(leftId);
+                        }
+                        newSub.put(id, new HashSet<>(sub.get(leftId)));
                     }
                 } else if (binaryOperator instanceof SubtractionOperator) {
                     if ((Integer) rightConst.getValue() < 0) {
@@ -165,12 +173,10 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                             newSub.get(leftId).remove(id);
                         else
                             newSub.put(leftId, new HashSet<>());
-                        newSub.put(id, sub.get(leftId));
+                        newSub.put(id, new HashSet<>(sub.get(leftId)));
                         if ((Integer) rightConst.getValue() > 0)
                             newSub.get(id).add(leftId);
-                        throw new RuntimeException(newSub.toString());
                     }
-
                 } else {
                     newSub.put(id, new HashSet<>());
                 }
@@ -187,8 +193,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                 else
                     newSub.put(rightId, new HashSet<>());
             }
-        } else {
-            newSub.put(id, new HashSet<>());
         }
         return new PentagonDomain(newInterval, newSub).recomputePentagon();
     }
