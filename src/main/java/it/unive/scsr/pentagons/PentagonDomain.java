@@ -55,7 +55,6 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain lub(PentagonDomain other) throws SemanticException {
-
         ValueEnvironment<Interval> lubInterval = this.interval.lub(other.interval);
         Map<Identifier, Set<Identifier>> lubSub = new HashMap<>();
 
@@ -66,7 +65,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         variables.forEach(var -> {
             Set<Identifier> aux = new HashSet<>();
             if (!this.sub.containsKey(var)) {
-                other.sub.get(var).forEach( id -> {
+                other.sub.get(var).forEach(id -> {
                     if (this.interval.getState(var).interval != null && this.interval.getState(id).interval != null &&
                             this.interval.getState(var).interval.getHigh().compareTo(this.interval.getState(id).interval.getLow()) < 0) {
                         aux.add(id);
@@ -75,7 +74,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                 lubSub.put(var, aux);
                 lubSub.get(var).addAll(other.sub.get(var));
             } else if (!other.sub.containsKey(var)) {
-                this.sub.get(var).forEach( id -> {
+                this.sub.get(var).forEach(id -> {
                     if (other.interval.getState(var).interval != null && other.interval.getState(id).interval != null &&
                             other.interval.getState(var).interval.getHigh().compareTo(other.interval.getState(id).interval.getLow()) < 0) {
                         aux.add(id);
@@ -122,25 +121,23 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assign(Identifier id, ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        ValueEnvironment<Interval> newInterval = interval.assign(id, expression, pp);
-        Map<Identifier, Set<Identifier>> newSub = sub;
+        PentagonDomain newPentagon = this.copy();
+        newPentagon.interval = interval.assign(id, expression, pp);
+        Map<Identifier, Set<Identifier>> newSub = newPentagon.sub;
 
         if (expression instanceof Constant) {
             newSub.put(id, new HashSet<>());
-            newSub.forEach((k,v) -> {
+            newSub.forEach((k, v) -> {
                 v.remove(id);
             });
         } else if (expression instanceof Identifier) {
-            newSub.forEach((k,v) -> {
+            newSub.forEach((k, v) -> {
                 v.remove(id);
             });
-            if (newSub.get((Identifier) expression) != null)
-                newSub.get((Identifier) expression).remove(id);
-            else
-                newSub.put((Identifier) expression, new HashSet<>());
-            newSub.put(id, new HashSet<>(sub.get( (Identifier) expression)));
+            newSub.computeIfAbsent((Identifier) expression, k -> new HashSet<>()).remove(id);
+            newSub.put(id, new HashSet<>(newSub.get((Identifier) expression)));
         } else if (expression instanceof BinaryExpression) {
-            newSub.forEach((k,v) -> {
+            newSub.forEach((k, v) -> {
                 v.remove(id);
             });
             BinaryExpression binaryExpression = (BinaryExpression) expression;
@@ -155,46 +152,34 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                         newSub.put(id, new HashSet<>());
                         newSub.get(leftId).add(id);
                     } else {
-                        if (newSub.get(leftId) != null)
-                            newSub.get(leftId).remove(id);
-                        else
-                            newSub.put(leftId, new HashSet<>());
+                        newSub.computeIfAbsent(leftId, k -> new HashSet<>()).remove(id);
                         if ((Integer) rightConst.getValue() < 0) {
                             newSub.get(id).add(leftId);
                         }
-                        newSub.put(id, new HashSet<>(sub.get(leftId)));
+                        newSub.put(id, new HashSet<>(newSub.get(leftId)));
                     }
                 } else if (binaryOperator instanceof SubtractionOperator) {
                     if ((Integer) rightConst.getValue() < 0) {
                         newSub.put(id, new HashSet<>());
                         newSub.get(leftId).add(id);
                     } else {
-                        if (newSub.get(leftId) != null)
-                            newSub.get(leftId).remove(id);
-                        else
-                            newSub.put(leftId, new HashSet<>());
-                        newSub.put(id, new HashSet<>(sub.get(leftId)));
+                        newSub.computeIfAbsent(leftId, k -> new HashSet<>()).remove(id);
+                        newSub.put(id, new HashSet<>(newSub.get(leftId)));
                         if ((Integer) rightConst.getValue() > 0)
                             newSub.get(id).add(leftId);
                     }
                 } else {
                     newSub.put(id, new HashSet<>());
                 }
-            } else if (left instanceof Identifier && right instanceof Identifier){
+            } else if (left instanceof Identifier && right instanceof Identifier) {
                 Identifier leftId = (Identifier) left;
                 Identifier rightId = (Identifier) right;
                 newSub.put(id, new HashSet<>());
-                if (newSub.get(leftId) != null)
-                 newSub.get(leftId).remove(id);
-                else
-                    newSub.put(leftId, new HashSet<>());
-                if (newSub.get(rightId) != null)
-                 newSub.get(rightId).remove(id);
-                else
-                    newSub.put(rightId, new HashSet<>());
+                newSub.computeIfAbsent(leftId, k -> new HashSet<>()).remove(id);
+                newSub.computeIfAbsent(rightId, k -> new HashSet<>()).remove(id);
             }
         }
-        return new PentagonDomain(newInterval, newSub).recomputePentagon();
+        return newPentagon.recomputePentagon();
     }
 
     @Override
@@ -204,8 +189,9 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
 
     @Override
     public PentagonDomain assume(ValueExpression expression, ProgramPoint pp) throws SemanticException {
-        ValueEnvironment<Interval> newInterval = interval.assume(expression, pp); //interval as always
-        Map<Identifier, Set<Identifier>> newSub = sub; //create new sub starting from the old one
+        PentagonDomain newPentagon = this.copy();
+        newPentagon.interval = interval.assume(expression, pp);
+        Map<Identifier, Set<Identifier>> newSub = newPentagon.sub;
 
         //since SUB are not affected by numbers we can only consider the case of identifiers and binary expressions (or negation of binary expressions)
         BinaryExpression exp = null;
@@ -213,7 +199,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         Identifier right = null;
 
         //negation of binary expression (with two identifiers) (ex. !(x < y))
-        if(expression instanceof UnaryExpression){
+        if (expression instanceof UnaryExpression) {
             UnaryExpression unaryExpression = (UnaryExpression) expression;
             if (unaryExpression.getOperator() instanceof LogicalNegation) {
                 expression = expression.removeNegations();
@@ -221,66 +207,41 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         }
 
         //binary expression (with two identifiers) (ex. x < y)
-        if(expression instanceof BinaryExpression && ((BinaryExpression)expression).getLeft() instanceof Identifier && ((BinaryExpression)expression).getRight() instanceof Identifier) {
+        if (expression instanceof BinaryExpression && ((BinaryExpression) expression).getLeft() instanceof Identifier && ((BinaryExpression) expression).getRight() instanceof Identifier) {
             exp = (BinaryExpression) expression;
             left = (Identifier) exp.getLeft();
             right = (Identifier) exp.getRight();
-        }
-        else //if no sub should be affected, return the same domain recomposed by the changes in the interval
-            return new PentagonDomain(newInterval, newSub).recomputePentagon();
+        } else //if no sub should be affected, return the same domain recomposed by the changes in the interval
+            return newPentagon.recomputePentagon();
 
-        if (exp.getOperator() instanceof ComparisonLt){ // x < y
-            if (newSub.get(right) != null)
-                newSub.get(right).remove(left);
-            else
-                newSub.put(right, new HashSet<>());
-            newSub.get(left).add(right);
-            newSub.get(left).addAll(sub.get(right));
+        if (exp.getOperator() instanceof ComparisonLt) { // x < y
+            newSub.computeIfAbsent(right, k -> new HashSet<>()).remove(left);
+            newSub.computeIfAbsent(left, k -> new HashSet<>()).remove(right);
+            newSub.get(left).addAll(newSub.get(right));
         }
-        if (exp.getOperator() instanceof ComparisonGt){ //x > y
-            if (newSub.get(left) != null)
-                newSub.get(left).remove(right);
-            else
-                newSub.put(left, new HashSet<>());
-            newSub.get(right).add(left);
-            newSub.get(right).addAll(sub.get(left));
+        if (exp.getOperator() instanceof ComparisonGt) { //x > y
+            newSub.computeIfAbsent(left, k -> new HashSet<>()).remove(right);
+            newSub.computeIfAbsent(right, k -> new HashSet<>()).add(left);
+            newSub.get(right).addAll(newSub.get(left));
         }
-        if (exp.getOperator() instanceof ComparisonLe){ // x <= y
-            if (newSub.get(left) != null)
-                newSub.get(left).remove(right);
-            else
-                newSub.put(left, new HashSet<>());
-            if (newSub.get(right) != null)
-                newSub.get(right).remove(left);
-            else
-                newSub.put(right, new HashSet<>());
-            newSub.get(left).addAll(sub.get(right));
+        if (exp.getOperator() instanceof ComparisonLe) { // x <= y
+            newSub.computeIfAbsent(left, k -> new HashSet<>()).remove(right);
+            newSub.computeIfAbsent(right, k -> new HashSet<>()).remove(left);
+            newSub.get(left).addAll(newSub.get(right));
         }
-        if (exp.getOperator() instanceof ComparisonGe){ // x >= y
-            if (newSub.get(left) != null)
-                newSub.get(left).remove(right);
-            else
-                newSub.put(left, new HashSet<>());
-            if (newSub.get(right) != null)
-                newSub.get(right).remove(left);
-            else
-                newSub.put(right, new HashSet<>());
-            newSub.get(right).addAll(sub.get(left));
+        if (exp.getOperator() instanceof ComparisonGe) { // x >= y
+            newSub.computeIfAbsent(left, k -> new HashSet<>()).remove(right);
+            newSub.computeIfAbsent(right, k -> new HashSet<>()).remove(left);
+            newSub.get(right).addAll(newSub.get(left));
         }
-        if (exp.getOperator() instanceof ComparisonEq){ //x==y
-            if (newSub.get(left) != null)
-                newSub.get(left).remove(right);
-            else
-                newSub.put(left, new HashSet<>());
-            if (newSub.get(right) != null)
-                newSub.get(right).remove(left);
-            else
-                newSub.put(right, new HashSet<>());
-            newSub.get(left).addAll(sub.get(right));
-            newSub.get(right).addAll(sub.get(left));
+        if (exp.getOperator() instanceof ComparisonEq) { //x==y
+            newSub.computeIfAbsent(left, k -> new HashSet<>()).remove(right);
+            newSub.computeIfAbsent(right, k -> new HashSet<>()).remove(left);
+            newSub.get(left).addAll(newSub.get(right));
+            newSub.get(right).addAll(newSub.get(left));
         }
 
-        return new PentagonDomain(newInterval, newSub).recomputePentagon();
+        return newPentagon.recomputePentagon();
     }
 
     @Override
@@ -312,17 +273,17 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
             right = (Identifier) exp.getRight();
 
             if (exp.getOperator() instanceof ComparisonLt || exp.getOperator() instanceof ComparisonLe){ // x < y || x <= y
-                if (sub.get(left).contains(right)) {
+                if (sub.get(left) != null && sub.get(left).contains(right)) {
                     sat = Satisfiability.SATISFIED;
                 }
             }
             if (exp.getOperator() instanceof ComparisonGt || exp.getOperator() instanceof ComparisonGe){ //x > y || x >= y
-                if (sub.get(right).contains(left)) {
+                if (sub.get(right) != null && sub.get(right).contains(left)) {
                     sat = Satisfiability.SATISFIED;
                 }
             }
             if (exp.getOperator() instanceof ComparisonEq){ //x==y
-                if (sub.get(left).contains(right) || sub.get(right).contains(left)) {
+                if ((sub.get(left) != null && sub.get(left).contains(right)) || (sub.get(right) != null && sub.get(right).contains(left))) {
                     sat = Satisfiability.NOT_SATISFIED;
                 }
             }
