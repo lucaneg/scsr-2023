@@ -242,7 +242,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                 right = binaryExpression.getLeft();
             }
 
-            if (left instanceof Identifier && right instanceof Constant && !left.equals(id)) {
+            if (left instanceof Identifier && right instanceof Constant) {
                 Identifier leftId = (Identifier) left;
                 Constant rightConst = (Constant) right;
                 // x = y + 5
@@ -291,6 +291,7 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                 else {
                     newSub.put(id, new HashSet<>());
                 }
+                newSub.get(id).remove(id);
             }
             else if(left instanceof BinaryExpression && right instanceof Constant && binaryOperator instanceof DivisionOperator)
             {
