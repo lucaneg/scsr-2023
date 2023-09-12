@@ -11,10 +11,12 @@ import it.unive.lisa.program.cfg.ProgramPoint;
 import it.unive.lisa.symbolic.SymbolicExpression;
 import it.unive.lisa.symbolic.value.*;
 import it.unive.lisa.symbolic.value.operator.AdditionOperator;
+import it.unive.lisa.symbolic.value.operator.ComparisonOperator;
 import it.unive.lisa.symbolic.value.operator.DivisionOperator;
 import it.unive.lisa.symbolic.value.operator.SubtractionOperator;
 import it.unive.lisa.symbolic.value.operator.binary.*;
 import it.unive.lisa.symbolic.value.operator.unary.LogicalNegation;
+import it.unive.lisa.util.numeric.MathNumber;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -290,14 +292,42 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
                     newSub.put(id, new HashSet<>());
                 }
             }
+            else if(left instanceof BinaryExpression && right instanceof Constant && binaryOperator instanceof DivisionOperator)
+            {
+                // id = (left + right)/2
+                if (((BinaryExpression) left).getLeft() instanceof Identifier && ((BinaryExpression) left).getRight() instanceof Identifier && (Integer) ((Constant) right).getValue() == 2) {
+                    Identifier LeftId = (Identifier) ((BinaryExpression) left).getLeft();
+                    Identifier RightId = (Identifier) ((BinaryExpression) left).getRight();
+
+                    //take the values presents in both the sub of leftid and rightid
+                    Set<Identifier> sub = new HashSet<>(newSub.get(LeftId));
+                    sub.retainAll(newSub.get(RightId));
+                    //since the operation is the mean, id will be less than all the value that are in both sub
+                    newSub.put(id, new HashSet<>());
+                    newSub.get(id).addAll(sub);
+                }
+
+            }
             // x = y [operator] z
             else if (left instanceof Identifier && right instanceof Identifier) {
                 Identifier leftId = (Identifier) left;
                 Identifier rightId = (Identifier) right;
+                if(binaryOperator instanceof SubtractionOperator)
+                {
+                    //check if the bottom of interval of left1 is greater than 0
+                    if(newPentagon.interval.getState(rightId).interval.getLow().compareTo(new MathNumber(0))>0)
+                    {
+                        newSub.put(id, new HashSet<>());
+                        newSub.get(id).add(leftId);
+                        newSub.get(id).addAll(newSub.get(leftId));
 
-                newSub.put(id, new HashSet<>());
-                newSub.computeIfAbsent(leftId, k -> new HashSet<>()).remove(id);
-                newSub.computeIfAbsent(rightId, k -> new HashSet<>()).remove(id);
+                    }
+                }
+                else {
+                    newSub.put(id, new HashSet<>());
+                    newSub.computeIfAbsent(leftId, k -> new HashSet<>()).remove(id);
+                    newSub.computeIfAbsent(rightId, k -> new HashSet<>()).remove(id);
+                }
             }
         }
         return newPentagon.recomputePentagon();
