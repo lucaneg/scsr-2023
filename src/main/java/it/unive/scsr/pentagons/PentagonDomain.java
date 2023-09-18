@@ -115,30 +115,33 @@ public class PentagonDomain implements ValueDomain<PentagonDomain> {
         variables.addAll(other.sub.keySet());
 
         variables.forEach(var -> {
-            Set<Identifier> aux = new HashSet<>();
             if (!this.sub.containsKey(var)) {
+                lubSub.put(var, other.sub.get(var));
+            } else if (!other.sub.containsKey(var)) {
+                lubSub.put(var, this.sub.get(var));
+            } else {
 
+                //s'
+                Set<Identifier> aux = new HashSet<>(this.sub.get(var));
+                aux.retainAll(other.sub.get(var));
+
+                //s''
+                this.sub.get(var).forEach(id -> {
+                    if(other.interval.getState(var).interval != null && other.interval.getState(id).interval != null &&
+                            other.interval.getState(var).interval.getHigh().compareTo(other.interval.getState(id).interval.getLow()) < 0) {
+                        aux.add(id);
+
+                    }
+                });
+
+                //s'''
                 other.sub.get(var).forEach(id -> {
-                    if (this.interval.getState(var).interval != null && this.interval.getState(id).interval != null &&
+                    if(this.interval.getState(var).interval != null && this.interval.getState(id).interval != null &&
                             this.interval.getState(var).interval.getHigh().compareTo(this.interval.getState(id).interval.getLow()) < 0) {
                         aux.add(id);
                     }
                 });
-                lubSub.put(var, aux);
-                lubSub.get(var).addAll(other.sub.get(var));
-            } else if (!other.sub.containsKey(var)) {
-                this.sub.get(var).forEach(id -> {
-                    if (other.interval.getState(var).interval != null && other.interval.getState(id).interval != null &&
-                            other.interval.getState(var).interval.getHigh().compareTo(other.interval.getState(id).interval.getLow()) < 0) {
-                        aux.add(id);
-                    }
-                });
-                lubSub.put(var, aux);
-                lubSub.get(var).addAll(this.sub.get(var));
-            } else {
-                // if the intersection between the two sets is not empty, then we have to add the sub expressions of the interval environment.
-                aux.addAll(this.sub.get(var));
-                aux.retainAll(other.sub.get(var));
+
                 lubSub.put(var, aux);
             }
         });
